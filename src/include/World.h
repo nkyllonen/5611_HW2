@@ -29,7 +29,12 @@
 #include "Camera.h"
 #include "Util.h"
 
-class World{
+//what lives in the WORLD
+#include "WorldObject.h"
+#include "Spring.h"
+
+class World
+{
 private:
 	int width;
 	int height;
@@ -53,6 +58,9 @@ private:
 	GLuint tex0;
 	GLuint tex1;
 
+	//updating constant(s)
+	const int NUM_SUBSTEPS = 10;
+
 public:
 	//CONSTRUCTORS AND DESTRUCTORS
 	World();
@@ -71,6 +79,7 @@ public:
 	bool loadModelData();
 	bool setupGraphics();
 	void draw(Camera * cam);
+	void update(double dt);
 
 };
 

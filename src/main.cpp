@@ -1,5 +1,5 @@
 //////////////////////////////////
-//Blank_SDL Window (Base Code)
+//CSCI 5611 - HW2 - Physical Simulation
 //Nikki Kyllonen
 //--------------------------------
 //draws a blue background SDL window

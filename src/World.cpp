@@ -194,6 +194,12 @@ void World::draw(Camera * cam)
 	floor->draw(cam, shaderProgram);*/
 }
 
+//loops through and updates attributes of springs and masses
+void World::update(double dt)
+{
+
+}
+
 /*----------------------------*/
 // PRIVATE FUNCTIONS
 /*----------------------------*/
