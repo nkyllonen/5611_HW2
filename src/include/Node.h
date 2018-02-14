@@ -27,6 +27,9 @@ public:
   //GETTERS
   Vec3D getNormal();
 
+  //VIRTUALS
+  int getType();
+
 };
 
 #endif

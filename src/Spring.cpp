@@ -9,8 +9,8 @@ Spring::Spring()
   dampening = 0.2;
   rest_len = 1.0;
 
-  head_index = 0;
-  tail_index = 0;
+  n1_index = 0;
+  n2_index = 0;
 }
 
 Spring::Spring(int n1, int n2)
@@ -19,8 +19,8 @@ Spring::Spring(int n1, int n2)
   dampening = 0.2;
   rest_len = 1.0;
 
-  head_index = n1;
-  tail_index = n2;
+  n1_index = n1;
+  n2_index = n2;
 }
 
 Spring::Spring(float s, float d, float len)
@@ -29,8 +29,8 @@ Spring::Spring(float s, float d, float len)
   dampening = d;
   rest_len = len;
 
-  head_index = 0;
-  tail_index = 0;
+  n1_index = 0;
+  n2_index = 0;
 }
 
 Spring::~Spring()
@@ -50,8 +50,8 @@ void Spring::setConstants(float ks, float kd, float len)
 
 void Spring::setNodeIndices(int n1, int n2)
 {
-  head_index = n1;
-  tail_index = n2;
+  n1_index = n1;
+  n2_index = n2;
 }
 
 /*----------------------------*/
@@ -72,12 +72,12 @@ float Spring::getRestLen()
   return rest_len;
 }
 
-int Spring::getHeadIndex()
+int Spring::getN1Index()
 {
-  return head_index;
+  return n1_index;
 }
 
-int Spring::getTailIndex()
+int Spring::getN2Index()
 {
-  return tail_index;
+  return n2_index;
 }

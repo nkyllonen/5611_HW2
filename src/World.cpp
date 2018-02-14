@@ -12,17 +12,24 @@ World::World()
 	height = 0;
 }
 
-World::World(int w, int h, int num)
+World::World(int w, int h)
 {
 	width = w;
 	height = h;
-	num_objects = num;
+
+	init();
 }
 
 World::~World()
 {
 	delete[] modelData;
-	//delete floor;
+
+	for (int i = 0; i < num_nodes; i++)
+	{
+		delete node_arr[i];
+	}
+
+	delete [] node_arr;
 }
 
 /*----------------------------*/
@@ -70,7 +77,7 @@ bool World::loadModelData()
 	setCubeIndices(0, CUBE_VERTS);
 
 	//SPHERE
-	int SPHERE_VERTS = 0;
+	/*int SPHERE_VERTS = 0;
 	float* sphereData = util::loadModel("models/sphere.txt", SPHERE_VERTS);
 	cout << "\nNumber of vertices in sphere model : " << SPHERE_VERTS << endl;
 	total_verts += SPHERE_VERTS;
@@ -84,13 +91,18 @@ bool World::loadModelData()
 		delete[] cubeData;
 		delete[] sphereData;
 		return false;
+	}*/
+	if (cubeData == nullptr)
+	{
+		delete[] cubeData;
+		return false;
 	}
 	modelData = new float[total_verts * 8];
 	//copy data into modelData array
 	copy(cubeData, cubeData + CUBE_VERTS * 8, modelData);
-	copy(sphereData, sphereData + SPHERE_VERTS * 8, modelData + (CUBE_VERTS * 8));
+	//copy(sphereData, sphereData + SPHERE_VERTS * 8, modelData + (CUBE_VERTS * 8));
 	delete[] cubeData;
-	delete[] sphereData;
+	//delete[] sphereData;
 	return true;
 }
 
@@ -184,14 +196,12 @@ void World::draw(Camera * cam)
 
 	glBindVertexArray(vao);
 
-	/*for (int i = 0; i < width*height; i++)
-	{
-			glUniform1i(uniTexID, 0); //Set texture ID to use (0 = wood texture)
-			objects_array[i]->draw(cam, shaderProgram);
-	}//END for loop
+	glUniform1i(uniTexID, -1); //Set texture ID to use for floor (-1 = no texture)
 
-	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = brick texture)
-	floor->draw(cam, shaderProgram);*/
+	for (int i = 0; i < num_nodes; i++)
+	{
+			node_arr[i]->draw(shaderProgram);
+	}//END for loop
 }
 
 //loops through and updates attributes of springs and masses
@@ -203,3 +213,37 @@ void World::update(double dt)
 /*----------------------------*/
 // PRIVATE FUNCTIONS
 /*----------------------------*/
+//init masses and springs using the width and height parameters
+void World::init()
+{
+	num_nodes = width * height;
+	Vec3D pos;
+	Node* n;
+
+	//center cloth on (0,0)
+	//flattened 2D -> 1D arrays
+	node_arr = new Node*[num_nodes];
+	for (int i = 0; i < width; i++)
+	{
+		for (int j = 0; j < height; j++)
+		{
+			pos.setX(i - (width/2));
+			pos.setY(j - (height/2));
+			n = new Node(pos);
+
+			//green cube
+			Material mat = Material();
+			mat.setAmbient(glm::vec3(0, 1, 0));
+			mat.setDiffuse(glm::vec3(0, 1, 0));
+			mat.setSpecular(glm::vec3(0.75, 0.75, 0.75));
+			n->setMaterial(mat);
+
+			n->setVertexInfo(CUBE_START, CUBE_VERTS);
+
+			node_arr[i + j*width] = n;
+
+			printf("[%i] at %i , %i :", i + j*width, i , j);
+			pos.print();
+		}
+	}
+}//END INIT()

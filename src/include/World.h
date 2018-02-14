@@ -31,16 +31,15 @@
 
 //what lives in the WORLD
 #include "WorldObject.h"
-#include "Spring.h"
+#include "Node.h"
 
 class World
 {
 private:
 	int width;
 	int height;
-	int num_objects;
 
-	int total_verts;
+	int total_verts = 0;
 	float* modelData;
 
 	//modelData indices
@@ -61,10 +60,17 @@ private:
 	//updating constant(s)
 	const int NUM_SUBSTEPS = 10;
 
+	//masses and springs
+	int num_nodes;
+	Node** node_arr;
+
+	//PRIVATE FUNCTIONS
+	void init();
+
 public:
 	//CONSTRUCTORS AND DESTRUCTORS
 	World();
-	World(int w, int h, int num);
+	World(int w, int h);
 	~World();
 
 	//SETTERS

@@ -16,8 +16,8 @@ private:
   float rest_len;
 
   //Node indices - into World's array
-  int head_index;
-  int tail_index;
+  int n1_index;
+  int n2_index;
 
 public:
   //CONSTRUCTORS AND DESTRUCTORS
@@ -34,8 +34,8 @@ public:
   float getStiffness();
   float getDampening();
   float getRestLen();
-  int getHeadIndex();
-  int getTailIndex();
+  int getN1Index();
+  int getN2Index();
 
 };
 

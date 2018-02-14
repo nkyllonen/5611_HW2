@@ -33,3 +33,11 @@ Vec3D Node::getNormal()
 {
   return normal;
 }
+
+/*----------------------------*/
+// VIRTUALS
+/*----------------------------*/
+int Node::getType()
+{
+	return NODE_WOBJ;
+}

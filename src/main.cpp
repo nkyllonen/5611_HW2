@@ -54,9 +54,6 @@ const float step_size = 0.15f;
 /*=============================*/
 // Helper Functions
 /*=============================*/
-/*=============================*/
-// Helper Functions
-/*=============================*/
 void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld);
 void mouseMove(SDL_MouseMotionEvent & event, Camera * player, float horizontal_angle, float vertical_angle);
 
@@ -64,6 +61,19 @@ void mouseMove(SDL_MouseMotionEvent & event, Camera * player, float horizontal_a
 //							  MAIN
 /*==============================================================*/
 int main(int argc, char *argv[]) {
+	srand(time(0));
+
+	//CHECK FOR WIDTH AND HEIGHT VALUES
+	if (argc != 3)
+	{
+		cout << "\nERROR: Incorrect usage. Expected ./a.out WIDTH HEIGHT\n";
+		exit(0);
+	}
+
+	int w = atoi(argv[1]);
+	int h = atoi(argv[2]);
+	printf("Cloth dimensions : %i by %i\n", w, h);
+
 	/////////////////////////////////
 	//INITIALIZE SDL WINDOW
 	/////////////////////////////////
@@ -78,7 +88,7 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
-	World* myWorld = new World();
+	World* myWorld = new World(w, h);
 
 	/////////////////////////////////
 	//LOAD MODEL DATA INTO WORLD
@@ -98,7 +108,7 @@ int main(int argc, char *argv[]) {
 	/////////////////////////////////
 	Camera* cam = new Camera();
 	cam->setDir(Vec3D(0, 0, 1));					//look along +z
-	cam->setPos(Vec3D(0,0,-5));						//start
+	cam->setPos(Vec3D(0,0,-10));						//start
 	cam->setUp(Vec3D(0, 1, 0));						//map is in xz plane
 	cam->setRight(Vec3D(1, 0, 0));				//look along +z
 
