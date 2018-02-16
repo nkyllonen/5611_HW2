@@ -14,6 +14,7 @@ class Node : public WorldObject
 {
 private:
   Vec3D normal;
+  bool isFixed;
 
 public:
   //CONSTRUCTORS AND DESTRUCTORS
@@ -23,9 +24,11 @@ public:
 
   //SETTERS
   void setNormal(Vec3D n);
+  void setFixed(bool f);
 
   //GETTERS
   Vec3D getNormal();
+  bool getIsFixed();
 
   //VIRTUALS
   int getType();

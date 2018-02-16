@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
 
 	int w = atoi(argv[1]);
 	int h = atoi(argv[2]);
-	printf("Cloth dimensions : %i by %i\n", w, h);
+	printf("Cloth width: %i by height: %i\n", w, h);
 
 	/////////////////////////////////
 	//INITIALIZE SDL WINDOW
@@ -102,6 +102,8 @@ int main(int argc, char *argv[]) {
 		SDL_Quit();
 		exit(0);
 	}
+
+	myWorld->init();
 
 	/////////////////////////////////
 	//SETUP CAMERA
@@ -266,7 +268,6 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 /*--------------------------------------------------------------*/
 // mouseMove : change the view accordingly when the mouse moves!
 /*--------------------------------------------------------------*/
-
 void mouseMove(SDL_MouseMotionEvent & event, Camera * cam, float horizontal_angle, float vertical_angle)
 {
 	Vec3D dir = cam->getDir();

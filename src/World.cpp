@@ -16,12 +16,11 @@ World::World(int w, int h)
 {
 	width = w;
 	height = h;
-
-	init();
 }
 
 World::~World()
 {
+	delete floor;
 	delete[] modelData;
 
 	for (int i = 0; i < num_nodes; i++)
@@ -202,17 +201,36 @@ void World::draw(Camera * cam)
 	{
 			node_arr[i]->draw(shaderProgram);
 	}//END for loop
+
+	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = metal floor)
+	floor->draw(shaderProgram);
 }
 
 //loops through and updates attributes of springs and masses
 void World::update(double dt)
 {
+	for (int step = 0; step < NUM_SUBSTEPS; step++)
+	{
+		//1. reset all accelerations [0, n]
+		for (int i = 0; i < num_nodes; i++)
+		{
+			node_arr[i]->setAcc(Vec3D(0,0,0));
+		}
 
+		//2. calculate net forces on i and i+1 [0, n-1]
+		for (int i = 0; i < num_nodes-1; i++)
+		{
+
+		}
+
+		//3. set velocities and positions accordingly
+		for (int i = 0; i < num_nodes; i++)
+		{
+
+		}
+	}
 }
 
-/*----------------------------*/
-// PRIVATE FUNCTIONS
-/*----------------------------*/
 //init masses and springs using the width and height parameters
 void World::init()
 {
@@ -223,6 +241,8 @@ void World::init()
 	//center cloth on (0,0)
 	//flattened 2D -> 1D arrays
 	node_arr = new Node*[num_nodes];
+	printf("Allocated array of %i Nodes.\n", num_nodes);
+
 	for (int i = 0; i < width; i++)
 	{
 		for (int j = 0; j < height; j++)
@@ -237,13 +257,29 @@ void World::init()
 			mat.setDiffuse(glm::vec3(0, 1, 0));
 			mat.setSpecular(glm::vec3(0.75, 0.75, 0.75));
 			n->setMaterial(mat);
-
 			n->setVertexInfo(CUBE_START, CUBE_VERTS);
+			n->setSize(Vec3D(0.25,0.25,0.1));
 
 			node_arr[i + j*width] = n;
 
-			printf("[%i] at %i , %i :", i + j*width, i , j);
-			pos.print();
+			//printf("[%i] at %i , %i :", i + j*width, i , j);
+			//pos.print();
 		}
 	}
+
+	//initialize floor to be below cloth
+	floor = new WorldObject(Vec3D(0,-0.5*height - 1, 0));
+	floor->setVertexInfo(CUBE_START, CUBE_VERTS);
+
+	Material mat = Material();
+	mat.setAmbient(glm::vec3(0.7, 0.7, 0.7));
+	mat.setDiffuse(glm::vec3(0.7, 0.7, 0.7));
+	mat.setSpecular(glm::vec3(0, 0, 0));
+
+	floor->setMaterial(mat);
+	floor->setSize(Vec3D(10, 0.1, 10)); //xz plane
 }//END INIT()
+
+/*----------------------------*/
+// PRIVATE FUNCTIONS
+/*----------------------------*/

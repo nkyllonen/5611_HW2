@@ -42,6 +42,8 @@ private:
 	int total_verts = 0;
 	float* modelData;
 
+	WorldObject* floor;
+
 	//modelData indices
 	int CUBE_START = 0;
 	int CUBE_VERTS = 0;
@@ -65,7 +67,6 @@ private:
 	Node** node_arr;
 
 	//PRIVATE FUNCTIONS
-	void init();
 
 public:
 	//CONSTRUCTORS AND DESTRUCTORS
@@ -86,6 +87,7 @@ public:
 	bool setupGraphics();
 	void draw(Camera * cam);
 	void update(double dt);
+	void init();
 
 };
 
