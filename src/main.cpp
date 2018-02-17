@@ -269,23 +269,29 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 		break;
 	case SDLK_LEFT:
 		//add left velocity to top row
-		myWorld->moveBy(Vec3D(-step_size,0,0));
+		myWorld->moveBy(Vec3D(step_size,0,0));	//for some reason opposite to what I thought?
 		break;
 	case SDLK_RIGHT:
 		//add right velocity to top row
-		myWorld->moveBy(Vec3D(step_size,0,0));
+		myWorld->moveBy(Vec3D(-step_size,0,0));	//for some reason opposite to what I thought?
 		break;
 	/////////////////////////////////
 	//ADJUST SPRING REST LEN WITH +/-
 	/////////////////////////////////
 	case SDLK_PLUS:
 	case SDLK_KP_PLUS:
-		myWorld->adjustRestLen(0.1);
+		myWorld->adjustRestLen(0.05);
 		break;
 	case SDLK_MINUS:
 	case SDLK_KP_MINUS:
-		myWorld->adjustRestLen(-0.1);
+		myWorld->adjustRestLen(-0.05);
 		break;
+	/////////////////////////////////
+	//RESET TO ORIGINAL POSITIONS ON 0
+	/////////////////////////////////
+	case SDLK_0:
+	case SDLK_KP_0:
+		myWorld->reset();
 	default:
 		printf("ERROR: Invalid key pressed (%s)\n", SDL_GetKeyName(event.keysym.sym));
 		break;

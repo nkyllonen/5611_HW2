@@ -49,7 +49,7 @@ void World::setSphereIndices(int start, int tris)
 void World::adjustRestLen(float x)
 {
 	restlen += x;
-	printf("\trest length: %f\n", restlen);
+	printf("---rest length: %f\n", restlen);
 }
 
 /*----------------------------*/
@@ -240,11 +240,11 @@ void World::update(double dt)
 				vi = dotProduct(node_arr[i]->getVel(), e);
 				vii = dotProduct(node_arr[i+1]->getVel(), e);
 
-				force_i = -ks*(len - restlen) - kd*(vi-vii);
+				force_i = -ks*(restlen - len) - kd*(vi-vii);
 
 				//apply force to i and i+1 -- update velocities first
-				node_arr[i]->setVel(node_arr[i]->getVel() + force_i*dt*e + gravity);
-				node_arr[i+1]->setVel(node_arr[i+1]->getVel() - force_i*dt*e + gravity);
+				node_arr[i]->setVel(node_arr[i]->getVel() + force_i*dt*e);
+				node_arr[i+1]->setVel(node_arr[i+1]->getVel() - force_i*dt*e);
 			}
 		}//FOR - horizontal
 
@@ -259,14 +259,20 @@ void World::update(double dt)
 			vi = dotProduct(node_arr[i]->getVel(), e);
 			vii = dotProduct(node_arr[i+width]->getVel(), e);
 
-			force_i = -ks*(len - restlen) - kd*(vi-vii);
+			force_i = -ks*(restlen - len) - kd*(vi-vii);
 
 			//apply force to i and i+1 -- update velocities first
-			node_arr[i]->setVel(node_arr[i]->getVel() + force_i*dt*e + gravity);
-			node_arr[i+width]->setVel(node_arr[i+width]->getVel() - force_i*dt*e + gravity);
+			node_arr[i]->setVel(node_arr[i]->getVel() + force_i*dt*e);
+			node_arr[i+width]->setVel(node_arr[i+width]->getVel() - force_i*dt*e);
 		}//FOR - vertical
 
-		//2.3 fix top row so it doesn't move
+		//2.3 add gravity to each velocity
+		for (int i = 0; i < num_nodes; i++)
+		{
+			node_arr[i]->setVel(node_arr[i]->getVel() + gravity);
+		}
+
+		//2.4 fix top row so it doesn't move
 		for (int i = 0; i < width; i++)
 		{
 			node_arr[i]->setVel(Vec3D(0,0,0));
@@ -297,7 +303,7 @@ void World::init()
 		for (int j = 0; j < height; j++)
 		{
 			pos.setX(i - (width/2));
-			pos.setY(j - (height/2));
+			pos.setY((height/2) - j);
 			n = new Node(pos);
 
 			//green cube
@@ -334,8 +340,20 @@ void World::moveBy(Vec3D v)
 {
 	for (int i = 0; i < width; i++)
 	{
-		node_arr[i]->setVel(node_arr[i]->getVel() + v);
+		node_arr[i]->setPos(node_arr[i]->getPos() + v);
 	}
+}
+
+//set back to original state
+void World::reset()
+{
+	for (int i = 0; i < num_nodes; i++)
+	{
+		delete node_arr[i];
+	}
+
+	delete [] node_arr;
+	init();
 }
 
 /*----------------------------*/
