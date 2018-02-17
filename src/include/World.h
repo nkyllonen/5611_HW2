@@ -65,11 +65,11 @@ private:
 	//masses and springs
 	int num_nodes;
 	Node** node_arr;
-	float restlen = 0.5;
-	const float ks = 500;
-	const float kd = 0.5;
+	float restlen = 1.0;
+	const float ks = 500.0;
+	const float kd = 50.0;
 	const float mass = 1.0;
-	Vec3D gravity = Vec3D(0,-0.5,0);
+	Vec3D gravity = Vec3D(0,0,0);
 
 	//PRIVATE FUNCTIONS
 

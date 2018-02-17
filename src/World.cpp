@@ -246,13 +246,25 @@ void World::update(double dt)
 				node_arr[i]->setVel(node_arr[i]->getVel() + force_i*dt*e + gravity);
 				node_arr[i+1]->setVel(node_arr[i+1]->getVel() - force_i*dt*e + gravity);
 			}
-		}
+		}//FOR - horizontal
 
 		//2.2 calculate vertical forces
-		/*for (int i = 0; i < width*(height-1); i++) //don't apply to bottom row
+		for (int i = 0; i < width*(height-1); i++) //don't apply to bottom row
 		{
+			//position vector from i to i+width
+			e = node_arr[i+width]->getPos() - node_arr[i]->getPos();
+			len = e.getMagnitude();
 
-		}*/
+			//components of velocities along e
+			vi = dotProduct(node_arr[i]->getVel(), e);
+			vii = dotProduct(node_arr[i+width]->getVel(), e);
+
+			force_i = -ks*(len - restlen) - kd*(vi-vii);
+
+			//apply force to i and i+1 -- update velocities first
+			node_arr[i]->setVel(node_arr[i]->getVel() + force_i*dt*e + gravity);
+			node_arr[i+width]->setVel(node_arr[i+width]->getVel() - force_i*dt*e + gravity);
+		}//FOR - vertical
 
 		//2.3 fix top row so it doesn't move
 		for (int i = 0; i < width; i++)
@@ -265,7 +277,7 @@ void World::update(double dt)
 		{
 			node_arr[i]->setPos(node_arr[i]->getPos() + dt*node_arr[i]->getVel());
 		}
-	}
+	}//FOR - substeps
 }//END update()
 
 //init masses and springs using the width and height parameters
