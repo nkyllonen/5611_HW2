@@ -29,7 +29,7 @@
 #include "Camera.h"
 #include "Util.h"
 
-//what lives in the WORLD
+//what lives in the World
 #include "WorldObject.h"
 #include "Node.h"
 
@@ -65,6 +65,11 @@ private:
 	//masses and springs
 	int num_nodes;
 	Node** node_arr;
+	float restlen = 0.5;
+	const float ks = 500;
+	const float kd = 0.5;
+	const float mass = 1.0;
+	Vec3D gravity = Vec3D(0,-0.5,0);
 
 	//PRIVATE FUNCTIONS
 
@@ -77,6 +82,7 @@ public:
 	//SETTERS
 	void setCubeIndices(int start, int tris);
 	void setSphereIndices(int start, int tris);
+	void adjustRestLen(float x);
 
 	//GETTERS
 	int getWidth();
@@ -88,6 +94,7 @@ public:
 	void draw(Camera * cam);
 	void update(double dt);
 	void init();
+	void moveBy(Vec3D v);
 
 };
 

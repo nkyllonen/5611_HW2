@@ -46,6 +46,12 @@ void World::setSphereIndices(int start, int tris)
 	SPHERE_VERTS = tris;
 }
 
+void World::adjustRestLen(float x)
+{
+	restlen += x;
+	printf("\trest length: %f\n", restlen);
+}
+
 /*----------------------------*/
 // GETTERS
 /*----------------------------*/
@@ -218,18 +224,49 @@ void World::update(double dt)
 		}
 
 		//2. calculate net forces on i and i+1 [0, n-1]
-		for (int i = 0; i < num_nodes-1; i++)
-		{
+		float force_i = 0.0, len = 1.0, vi, vii;
+		Vec3D e = Vec3D(1,1,1);
 
+		//2.1 calculate horizontal forces
+		for (int i = 0; i < width*height-1; i++)
+		{
+			if ((i+1) % width != 0) //don't apply to right column
+			{
+				//position vector from i to i+1
+				e = node_arr[i+1]->getPos() - node_arr[i]->getPos();
+				len = e.getMagnitude();
+
+				//components of velocities along e
+				vi = dotProduct(node_arr[i]->getVel(), e);
+				vii = dotProduct(node_arr[i+1]->getVel(), e);
+
+				force_i = -ks*(len - restlen) - kd*(vi-vii);
+
+				//apply force to i and i+1 -- update velocities first
+				node_arr[i]->setVel(node_arr[i]->getVel() + force_i*dt*e + gravity);
+				node_arr[i+1]->setVel(node_arr[i+1]->getVel() - force_i*dt*e + gravity);
+			}
 		}
 
-		//3. set velocities and positions accordingly
+		//2.2 calculate vertical forces
+		/*for (int i = 0; i < width*(height-1); i++) //don't apply to bottom row
+		{
+
+		}*/
+
+		//2.3 fix top row so it doesn't move
+		for (int i = 0; i < width; i++)
+		{
+			node_arr[i]->setVel(Vec3D(0,0,0));
+		}
+
+		//3. set positions accordingly
 		for (int i = 0; i < num_nodes; i++)
 		{
-
+			node_arr[i]->setPos(node_arr[i]->getPos() + dt*node_arr[i]->getVel());
 		}
 	}
-}
+}//END update()
 
 //init masses and springs using the width and height parameters
 void World::init()
@@ -278,7 +315,16 @@ void World::init()
 
 	floor->setMaterial(mat);
 	floor->setSize(Vec3D(10, 0.1, 10)); //xz plane
-}//END INIT()
+}//END init()
+
+//add velocity v to top row of Nodes
+void World::moveBy(Vec3D v)
+{
+	for (int i = 0; i < width; i++)
+	{
+		node_arr[i]->setVel(node_arr[i]->getVel() + v);
+	}
+}
 
 /*----------------------------*/
 // PRIVATE FUNCTIONS

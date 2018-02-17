@@ -204,6 +204,7 @@ int main(int argc, char *argv[]) {
 			framecount = 0;
 		}
 
+		myWorld->update(delta_time);
 		SDL_GL_SwapWindow(window);
 		framecount++;
 
@@ -237,7 +238,7 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 	switch (event.keysym.sym)
 	{
 	/////////////////////////////////
-	//TRANSLATION WITH WASD
+	//CAMERA TRANSLATION WITH WASD
 	/////////////////////////////////
 	case SDLK_w:
 		//printf("W key pressed - step forward\n");
@@ -254,6 +255,36 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 	case SDLK_a:
 		//printf("A key pressed - step to the left\n");
 		temp_pos = pos - (step_size*right);
+		break;
+	/////////////////////////////////
+	//CLOTH TRANSLATION WITH ARROWS
+	/////////////////////////////////
+	case SDLK_UP:
+		//add up velocity to top row
+		myWorld->moveBy(Vec3D(0,step_size,0));
+		break;
+	case SDLK_DOWN:
+		//add down velocity to top row
+		myWorld->moveBy(Vec3D(0,-step_size,0));
+		break;
+	case SDLK_LEFT:
+		//add left velocity to top row
+		myWorld->moveBy(Vec3D(-step_size,0,0));
+		break;
+	case SDLK_RIGHT:
+		//add right velocity to top row
+		myWorld->moveBy(Vec3D(step_size,0,0));
+		break;
+	/////////////////////////////////
+	//ADJUST SPRING REST LEN WITH +/-
+	/////////////////////////////////
+	case SDLK_PLUS:
+	case SDLK_KP_PLUS:
+		myWorld->adjustRestLen(0.1);
+		break;
+	case SDLK_MINUS:
+	case SDLK_KP_MINUS:
+		myWorld->adjustRestLen(-0.1);
 		break;
 	default:
 		printf("ERROR: Invalid key pressed (%s)\n", SDL_GetKeyName(event.keysym.sym));
