@@ -71,7 +71,7 @@ private:
 	int num_nodes;
 	Node** node_arr;
 	float restlen = 1.0;
-	const float ks = 1000.0;
+	const float ks = 300.0;
 	const float kd = 50.0;
 	const float mass = 1.0;
 	Vec3D gravity = Vec3D(0,-0.1,0);

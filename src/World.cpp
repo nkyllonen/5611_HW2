@@ -192,7 +192,7 @@ bool World::setupGraphics()
 
 	//only passing in a position vec3 value into shader
 	GLint line_posAttrib = glGetAttribLocation(flatProgram, "position");
-	glVertexAttribPointer(line_posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
+	glVertexAttribPointer(line_posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 	glEnableVertexAttribArray(line_posAttrib);
 
 	glBindVertexArray(0);
@@ -244,6 +244,20 @@ void World::draw(Camera * cam)
 
 	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
 	floor->draw(phongProgram);
+
+
+	glUseProgram(flatProgram);
+glBindVertexArray(line_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
+
+	//new uniforms for the flat shading program
+	GLint uniLineModel = glGetUniformLocation(flatProgram, "model");
+	GLint uniLineView = glGetUniformLocation(flatProgram, "view");
+	GLint uniLineProj = glGetUniformLocation(flatProgram, "proj");
+	glm::mat4 model;
+	glUniformMatrix4fv(uniLineModel, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(uniLineView, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(uniLineProj, 1, GL_FALSE, glm::value_ptr(proj));
 
 	drawSprings();
 }
@@ -410,13 +424,10 @@ void World::drawNodes()
 
 void World::drawSprings()
 {
-	glBindVertexArray(line_vao);
-	glUseProgram(flatProgram);
-	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
-
 	loadLineVertices();
-
-	glDrawArrays(GL_LINES, 0, total_springs);
+	glBufferData(GL_ARRAY_BUFFER, total_springs * 6 * sizeof(float), lineData, GL_STREAM_DRAW);
+	glLineWidth(5);
+	glDrawArrays(GL_LINES, 0, total_springs * 2);
 }
 
 //loop through nodes array and plug positions into lineData
@@ -447,9 +458,20 @@ void World::loadLineVertices()
 		pi = node_arr[i]->getPos();
 		pii = node_arr[i+width]->getPos();
 
+		//pi.print();
+		//cout << endl;
+		//pii.print();
+
 		util::loadVecValues(lineData, pi, count);
 		count += 3;
 		util::loadVecValues(lineData, pii, count);
 		count += 3;
 	}
+	/*cout << "width: " << width << endl;
+	cout << "height: " << height << endl;
+	pi.print();
+	pii.print();
+	cout << "total springs: " << total_springs << endl;
+	cout << lineData[3] << endl;
+	cout << endl;*/
 }
