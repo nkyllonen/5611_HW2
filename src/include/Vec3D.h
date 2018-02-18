@@ -5,6 +5,10 @@
 class Vec3D
 {
 public:
+	float x;
+	float y;
+	float z;
+
 	//CONSTRUCTORS AND DESTRUCTORS
 	Vec3D();
 	Vec3D(float xx, float yy, float zz);
@@ -43,9 +47,7 @@ public:
 	void print();
 
 private:
-	float x;
-	float y;
-	float z;
+
 };
 
 #endif

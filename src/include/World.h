@@ -41,6 +41,8 @@ private:
 
 	int total_verts = 0;
 	float* modelData;
+	int total_springs = 0;
+	float* lineData;
 
 	WorldObject* floor;
 
@@ -51,11 +53,14 @@ private:
 	int SPHERE_VERTS = 0;
 
 	//VAO and VBO GLuints
-	GLuint vao;
-	GLuint vbo[1];
+	GLuint cube_vao;
+	GLuint cube_vbo[1];
+	GLuint line_vao;
+	GLuint line_vbo[1];
 
 	//Shader and Texture GLuints
-	GLuint shaderProgram;
+	GLuint phongProgram;
+	GLuint flatProgram;
 	GLuint tex0;
 	GLuint tex1;
 
@@ -72,6 +77,9 @@ private:
 	Vec3D gravity = Vec3D(0,-0.1,0);
 
 	//PRIVATE FUNCTIONS
+	void drawNodes();
+	void drawSprings();
+	void loadLineVertices();
 
 public:
 	//CONSTRUCTORS AND DESTRUCTORS

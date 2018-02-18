@@ -16,12 +16,15 @@ World::World(int w, int h)
 {
 	width = w;
 	height = h;
+	num_nodes = width * height;
+	total_springs = (width - 1) * height + (height - 1) * width;
 }
 
 World::~World()
 {
 	delete floor;
 	delete[] modelData;
+	delete[] lineData;
 
 	for (int i = 0; i < num_nodes; i++)
 	{
@@ -68,7 +71,9 @@ int World::getHeight()
 /*----------------------------*/
 // OTHERS
 /*----------------------------*/
-//load in all models and store data into the modelData array
+/*--------------------------------------------------------------*/
+// loadModelData : load in all models and store data into the modelData array
+/*--------------------------------------------------------------*/
 bool World::loadModelData()
 {
 	/////////////////////////////////
@@ -108,37 +113,39 @@ bool World::loadModelData()
 	//copy(sphereData, sphereData + SPHERE_VERTS * 8, modelData + (CUBE_VERTS * 8));
 	delete[] cubeData;
 	//delete[] sphereData;
+
+	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring
+
 	return true;
 }
 
-//
+/*--------------------------------------------------------------*/
+// setupGraphics : load shaders, textures, set cube_vao + cube_vbo
+/*--------------------------------------------------------------*/
 bool World::setupGraphics()
 {
 	/////////////////////////////////
-	//BUILD VERTEX ARRAY OBJECT
+	//BUILD CUBE VAO + VBO
 	/////////////////////////////////
 	//This stores the VBO and attribute mappings in one object
-	glGenVertexArrays(1, &vao); //Create a VAO
-	glBindVertexArray(vao); //Bind the above created VAO to the current context
+	glGenVertexArrays(1, &cube_vao); //Create a VAO
+	glBindVertexArray(cube_vao); //Bind the cube_vao to the current context
 
-	/////////////////////////////////
-	//BUILD VERTEX BUFFER OBJECT
-	/////////////////////////////////
 	//Allocate memory on the graphics card to store geometry (vertex buffer object)
-	glGenBuffers(1, vbo);  //Create 1 buffer called vbo
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); //Set the vbo as the active array buffer (Only one buffer can be active at a time)
-	glBufferData(GL_ARRAY_BUFFER, total_verts * 8 * sizeof(float), modelData, GL_STATIC_DRAW); //upload vertices to vbo
+	glGenBuffers(1, cube_vbo);  //Create 1 buffer called cube_vbo
+	glBindBuffer(GL_ARRAY_BUFFER, cube_vbo[0]); //Set the cube_vbo as the active array buffer (Only one buffer can be active at a time)
+	glBufferData(GL_ARRAY_BUFFER, total_verts * 8 * sizeof(float), modelData, GL_STATIC_DRAW); //upload vertices to cube_vbo
 
 	/////////////////////////////////
-	//SETUP SHADERS
+	//SETUP CUBE SHADERS
 	/////////////////////////////////
-	shaderProgram = util::LoadShader("Shaders/phongTex.vert", "Shaders/phongTex.frag");
+	phongProgram = util::LoadShader("Shaders/phongTex.vert", "Shaders/phongTex.frag");
 
 	//load in textures
 	tex0 = util::LoadTexture("textures/wood.bmp");
 	tex1 = util::LoadTexture("textures/grey_stones.bmp");
 
-	if (tex0 == -1 || tex1 == -1 || shaderProgram == -1)
+	if (tex0 == -1 || tex1 == -1 || phongProgram == -1)
 	{
 		cout << "\nCan't load texture(s)" << endl;
 		printf(strerror(errno));
@@ -146,39 +153,68 @@ bool World::setupGraphics()
 	}
 
 	//Tell OpenGL how to set fragment shader input
-	GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+	GLint posAttrib = glGetAttribLocation(phongProgram, "position");
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
 	//Attribute, vals/attrib., type, normalized?, stride, offset
 	//Binds to VBO current GL_ARRAY_BUFFER
 	glEnableVertexAttribArray(posAttrib);
 
-	GLint normAttrib = glGetAttribLocation(shaderProgram, "inNormal");
+	GLint normAttrib = glGetAttribLocation(phongProgram, "inNormal");
 	glVertexAttribPointer(normAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
 	glEnableVertexAttribArray(normAttrib);
 
-	GLint texAttrib = glGetAttribLocation(shaderProgram, "inTexcoord");
+	GLint texAttrib = glGetAttribLocation(phongProgram, "inTexcoord");
 	glEnableVertexAttribArray(texAttrib);
 	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	glBindVertexArray(0); //Unbind the VAO in case we want to create a new one
 
+	/////////////////////////////////
+	//BUILD LINE VAO + VBO
+	/////////////////////////////////
+	glGenVertexArrays(1, &line_vao);
+	glBindVertexArray(line_vao); //Bind the line_vao to the current context
+	glGenBuffers(1, line_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, total_springs * 6 * sizeof(float), lineData, GL_STREAM_DRAW);
+
+	/////////////////////////////////
+	//SETUP LINE SHADERS
+	/////////////////////////////////
+	flatProgram = util::LoadShader("Shaders/flat.vert", "Shaders/flat.frag");
+
+	if (flatProgram == -1)
+	{
+		cout << "\nCan't load flat shaders(s)" << endl;
+		printf(strerror(errno));
+		return false;
+	}
+
+	//only passing in a position vec3 value into shader
+	GLint line_posAttrib = glGetAttribLocation(flatProgram, "position");
+	glVertexAttribPointer(line_posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
+	glEnableVertexAttribArray(line_posAttrib);
+
+	glBindVertexArray(0);
+
 	glEnable(GL_DEPTH_TEST);
 	return true;
 }
 
-//loops through WObj array and draws each
-//also draws floor
+/*--------------------------------------------------------------*/
+// draw : loops through node array and draws each + floor
+/*--------------------------------------------------------------*/
 void World::draw(Camera * cam)
 {
 	glClearColor(.2f, 0.4f, 0.8f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(shaderProgram); //Set the active shader (only one can be used at a time)
+	glUseProgram(phongProgram); //Set the active shader (only one can be used at a time)
 
 	//vertex shader uniforms
-	GLint uniView = glGetUniformLocation(shaderProgram, "view");
-	GLint uniProj = glGetUniformLocation(shaderProgram, "proj");
-	GLint uniTexID = glGetUniformLocation(shaderProgram, "texID");
+	GLint uniView = glGetUniformLocation(phongProgram, "view");
+	GLint uniProj = glGetUniformLocation(phongProgram, "proj");
+	GLint uniTexID = glGetUniformLocation(phongProgram, "texID");
 
 	//build view matrix from Camera
 	glm::mat4 view = glm::lookAt(
@@ -193,26 +229,28 @@ void World::draw(Camera * cam)
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, tex0);
-	glUniform1i(glGetUniformLocation(shaderProgram, "tex0"), 0);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex0"), 0);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, tex1);
-	glUniform1i(glGetUniformLocation(shaderProgram, "tex1"), 1);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
 
-	glBindVertexArray(vao);
+	glBindVertexArray(cube_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, cube_vbo[0]); //Set the cube_vbo as the active
 
-	glUniform1i(uniTexID, -1); //Set texture ID to use for floor (-1 = no texture)
+	glUniform1i(uniTexID, -1); //Set texture ID to use for nodes and springs (-1 = no texture)
 
-	for (int i = 0; i < num_nodes; i++)
-	{
-			node_arr[i]->draw(shaderProgram);
-	}//END for loop
+	drawNodes();
 
-	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = metal floor)
-	floor->draw(shaderProgram);
+	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
+	floor->draw(phongProgram);
+
+	drawSprings();
 }
 
-//loops through and updates attributes of springs and masses
+/*--------------------------------------------------------------*/
+// update : loops through and updates attributes of springs and masses
+/*--------------------------------------------------------------*/
 void World::update(double dt)
 {
 	for (int step = 0; step < NUM_SUBSTEPS; step++)
@@ -286,10 +324,11 @@ void World::update(double dt)
 	}//FOR - substeps
 }//END update()
 
-//init masses and springs using the width and height parameters
+/*--------------------------------------------------------------*/
+// init : initializes masses and springs using the width and height parameters
+/*--------------------------------------------------------------*/
 void World::init()
 {
-	num_nodes = width * height;
 	Vec3D pos;
 	Node* n;
 
@@ -302,8 +341,8 @@ void World::init()
 	{
 		for (int j = 0; j < height; j++)
 		{
-			pos.setX(i - (width/2));
-			pos.setY((height/2) - j);
+			pos.setX(i - (width/2)); //draw left to right
+			pos.setY((height/2) - j); //draw top to bottom
 			n = new Node(pos);
 
 			//green cube
@@ -313,17 +352,16 @@ void World::init()
 			mat.setSpecular(glm::vec3(0.75, 0.75, 0.75));
 			n->setMaterial(mat);
 			n->setVertexInfo(CUBE_START, CUBE_VERTS);
-			n->setSize(Vec3D(0.25,0.25,0.1));
+			n->setSize(Vec3D(0.25,0.25,0.05));
 
 			node_arr[i + j*width] = n;
-
-			//printf("[%i] at %i , %i :", i + j*width, i , j);
-			//pos.print();
 		}
 	}
 
+	loadLineVertices();
+
 	//initialize floor to be below cloth
-	floor = new WorldObject(Vec3D(0,-0.5*height - 1, 0));
+	floor = new WorldObject(Vec3D(0,-0.5*height - 2, 0));
 	floor->setVertexInfo(CUBE_START, CUBE_VERTS);
 
 	Material mat = Material();
@@ -332,7 +370,7 @@ void World::init()
 	mat.setSpecular(glm::vec3(0, 0, 0));
 
 	floor->setMaterial(mat);
-	floor->setSize(Vec3D(10, 0.1, 10)); //xz plane
+	floor->setSize(Vec3D(width*2, 0.1, width)); //xz plane
 }//END init()
 
 //add velocity v to top row of Nodes
@@ -344,9 +382,12 @@ void World::moveBy(Vec3D v)
 	}
 }
 
-//set back to original state
+/*--------------------------------------------------------------*/
+// reset : set back to initial state
+/*--------------------------------------------------------------*/
 void World::reset()
 {
+	restlen = 1.0;
 	for (int i = 0; i < num_nodes; i++)
 	{
 		delete node_arr[i];
@@ -359,3 +400,56 @@ void World::reset()
 /*----------------------------*/
 // PRIVATE FUNCTIONS
 /*----------------------------*/
+void World::drawNodes()
+{
+	for (int i = 0; i < num_nodes; i++)
+	{
+			node_arr[i]->draw(phongProgram);
+	}
+}
+
+void World::drawSprings()
+{
+	glBindVertexArray(line_vao);
+	glUseProgram(flatProgram);
+	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
+
+	loadLineVertices();
+
+	glDrawArrays(GL_LINES, 0, total_springs);
+}
+
+//loop through nodes array and plug positions into lineData
+void World::loadLineVertices()
+{
+	int count = 0;
+	Vec3D pi;
+	Vec3D pii;
+
+	//horizontal first
+	for (int i = 0; i < num_nodes; i++)
+	{
+		if ((i+1) % width != 0) //don't apply to right column
+		{
+			pi = node_arr[i]->getPos();
+			pii = node_arr[i+1]->getPos();
+
+			util::loadVecValues(lineData, pi, count);
+			count += 3;
+			util::loadVecValues(lineData, pii, count);
+			count += 3;
+		}
+	}
+
+	//vertical
+	for (int i = 0; i < width*(height-1); i++) //don't apply to bottom row
+	{
+		pi = node_arr[i]->getPos();
+		pii = node_arr[i+width]->getPos();
+
+		util::loadVecValues(lineData, pi, count);
+		count += 3;
+		util::loadVecValues(lineData, pii, count);
+		count += 3;
+	}
+}

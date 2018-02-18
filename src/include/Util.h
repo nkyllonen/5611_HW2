@@ -49,6 +49,8 @@ namespace util
 	GLuint LoadShader(const char *vertex_path, const char *fragment_path);
 
 	GLuint LoadTexture(const char* texFile);
+
+	void loadVecValues(float* arr, Vec3D v, int start);
 }
 
 #endif

@@ -141,11 +141,10 @@ int main(int argc, char *argv[]) {
 	bool quit = false;
 	bool mouse_active = false;
 	bool recentering = true;
-	float last_time = SDL_GetTicks(),	delta_time = 0,	new_time = 0;
-
 	float mouse_x, mouse_y;
 
 	//FPS calculations
+	float new_time = 0;
 	float framecount = 0;
 	float fps = 0, last_fps_print = 0.0;
 
@@ -193,8 +192,6 @@ int main(int argc, char *argv[]) {
 
 		//delta_time is in seconds so convert ticks (ms) by * 1000
 		new_time = SDL_GetTicks();
-		delta_time = (new_time - last_time) / 1000.0;
-		last_time = new_time;
 
 		if ((new_time - last_fps_print) / 1000.0 >= 1.0) //only print every 1+ seconds
 		{
@@ -204,7 +201,7 @@ int main(int argc, char *argv[]) {
 			framecount = 0;
 		}
 
-		myWorld->update(delta_time);
+		myWorld->update(1.0e-3);
 		SDL_GL_SwapWindow(window);
 		framecount++;
 
@@ -241,20 +238,16 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 	//CAMERA TRANSLATION WITH WASD
 	/////////////////////////////////
 	case SDLK_w:
-		//printf("W key pressed - step forward\n");
 		temp_pos = pos + (step_size*dir);
 		break;
 	case SDLK_s:
-		//printf("S key pressed - step backward\n");
-		temp_pos = pos - (step_size*dir);
+		temp_pos = pos - (step_size*dir);		//for some reason opposite to what I thought?
 		break;
 	case SDLK_d:
-		//printf("D key pressed - step to the right\n");
-		temp_pos = pos + (step_size*right);
+		temp_pos = pos - (step_size*right);	//for some reason opposite to what I thought?
 		break;
 	case SDLK_a:
-		//printf("A key pressed - step to the left\n");
-		temp_pos = pos - (step_size*right);
+		temp_pos = pos + (step_size*right);
 		break;
 	/////////////////////////////////
 	//CLOTH TRANSLATION WITH ARROWS
