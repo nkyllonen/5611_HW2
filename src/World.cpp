@@ -391,13 +391,13 @@ void World::init()
 	mat2.setSpecular(glm::vec3(0.5, 0.5, 0.5));
 
 	sphere->setMaterial(mat2);
-	sphere->setSize(Vec3D(1, 1, 1));
+	sphere->setSize(Vec3D(3,3,3));
 }//END init
 
 /*--------------------------------------------------------------*/
-// moveby : add velocity v to top row of Nodes
+// moveClothby : add velocity v to top row of Nodes
 /*--------------------------------------------------------------*/
-void World::moveBy(Vec3D v)
+void World::moveClothBy(Vec3D v)
 {
 	for (int i = 0; i < width; i++)
 	{
@@ -421,6 +421,14 @@ void World::reset()
 	delete sphere;
 	init();
 }//END reset
+
+/*--------------------------------------------------------------*/
+// moveSphereby : add velocity v to sphere
+/*--------------------------------------------------------------*/
+void World::moveSphereBy(Vec3D v)
+{
+	sphere->setPos(sphere->getPos() + v);
+}
 
 /*----------------------------*/
 // PRIVATE FUNCTIONS
@@ -479,8 +487,8 @@ void World::loadLineVertices()
 }//END loadLineVertices
 
 /*--------------------------------------------------------------*/
-// checkForCollisions : takes position, velocity returns new velocity
-//											after collision (returns original vel for no col)
+// checkForCollisions : takes possible position and current velocity
+//											calculates new velocity after collision
 /*--------------------------------------------------------------*/
 void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel)
 {
@@ -505,16 +513,16 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	Vec3D s_dist = in_pos - s_pos;
 	float dist_sq = dotProduct(s_dist, s_dist);
 	//float r_sq = dotProduct(s_size, s_size);
-	float r_sq = s_size.getX()/2.0;
+	float r_sq = s_size.getX();
 
-	if (dist_sq < r_sq)
+	if (dist_sq < r_sq + 0.001)
 	{
 		//cout << "Sphere collision!" << endl;
 		s_dist.normalize();//radial vector normalized
 		out_vel = util::calcCollisionVel(in_vel, s_dist, COR);
 
 		//move outside of sphere along radial vector
-		out_pos = s_pos + (sqrt(r_sq) + 0.005)*s_dist;
+		out_pos = s_pos + (sqrt(r_sq) + 0.001)*s_dist;
 		return;
 	}
 

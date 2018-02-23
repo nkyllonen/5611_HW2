@@ -74,9 +74,9 @@ private:
 	int num_nodes;
 	Node** node_arr;
 	float restlen = 1.0;
-	const float ks = 300.0;
+	const float ks = 500.0;
 	const float kd = 30.0;
-	const float mass = 1.0;
+	const float mass = 0.5;
 	Vec3D gravity = Vec3D(0,-0.1,0);
 
 	//PRIVATE FUNCTIONS
@@ -104,8 +104,9 @@ public:
 	void draw(Camera * cam);
 	void update(double dt);
 	void init();
-	void moveBy(Vec3D v);
+	void moveClothBy(Vec3D v);
 	void reset();
+	void moveSphereBy(Vec3D v);
 
 };
 

@@ -51,6 +51,14 @@ string fragFile = "Shaders/phong.frag";
 const float mouse_speed = 0.05f;
 const float step_size = 0.15f;
 
+enum state
+{
+	MOVE_CLOTH,
+	MOVE_SPHERE
+};
+
+int cur_state = MOVE_CLOTH;
+
 /*=============================*/
 // Helper Functions
 /*=============================*/
@@ -190,7 +198,6 @@ int main(int argc, char *argv[]) {
 		//draw all WObjs
 		myWorld->draw(cam);
 
-		//delta_time is in seconds so convert ticks (ms) by * 1000
 		new_time = SDL_GetTicks();
 
 		if ((new_time - last_fps_print) / 1000.0 >= 1.0) //only print every 1+ seconds
@@ -253,20 +260,49 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 	//CLOTH TRANSLATION WITH ARROWS
 	/////////////////////////////////
 	case SDLK_UP:
-		//add up velocity to top row
-		myWorld->moveBy(Vec3D(0,step_size,0));
+		if (cur_state == MOVE_CLOTH)
+		{
+			//add up velocity to top row
+			myWorld->moveClothBy(Vec3D(0,step_size,0));
+		}
+		else if (cur_state == MOVE_SPHERE)
+		{
+			myWorld->moveSphereBy(Vec3D(0,step_size,0));
+		}
+
 		break;
 	case SDLK_DOWN:
-		//add down velocity to top row
-		myWorld->moveBy(Vec3D(0,-step_size,0));
+		if (cur_state == MOVE_CLOTH)
+		{
+			//add down velocity to top row
+			myWorld->moveClothBy(Vec3D(0,-step_size,0));
+		}
+		else if (cur_state == MOVE_SPHERE)
+		{
+			myWorld->moveSphereBy(Vec3D(0,-step_size,0));
+		}
 		break;
 	case SDLK_LEFT:
-		//add left velocity to top row
-		myWorld->moveBy(Vec3D(step_size,0,0));	//for some reason opposite to what I thought?
+		if (cur_state == MOVE_CLOTH)
+		{
+			//add left velocity to top row
+			myWorld->moveClothBy(Vec3D(step_size,0,0));
+		}
+		else if (cur_state == MOVE_SPHERE)
+		{
+			myWorld->moveSphereBy(Vec3D(step_size,0,0));
+		}
 		break;
 	case SDLK_RIGHT:
-		//add right velocity to top row
-		myWorld->moveBy(Vec3D(-step_size,0,0));	//for some reason opposite to what I thought?
+		if (cur_state == MOVE_CLOTH)
+		{
+			//add right velocity to top row
+			myWorld->moveClothBy(Vec3D(-step_size,0,0));
+		}
+		else if (cur_state == MOVE_SPHERE)
+		{
+			myWorld->moveSphereBy(Vec3D(-step_size,0,0));
+		}
 		break;
 	/////////////////////////////////
 	//ADJUST SPRING REST LEN WITH +/-
@@ -285,6 +321,20 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 	case SDLK_0:
 	case SDLK_KP_0:
 		myWorld->reset();
+		break;
+	/////////////////////////////////
+	//CHANGE STATE WITH 1/2
+	/////////////////////////////////
+	case SDLK_1:
+	case SDLK_KP_1:
+		cur_state = MOVE_CLOTH;
+		cout << "--State changed to MOVE_CLOTH--" << endl;
+		break;
+	case SDLK_2:
+	case SDLK_KP_2:
+		cur_state = MOVE_SPHERE;
+		cout << "--State changed to MOVE_SPHERE--" << endl;
+		break;
 	default:
 		printf("ERROR: Invalid key pressed (%s)\n", SDL_GetKeyName(event.keysym.sym));
 		break;
