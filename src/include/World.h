@@ -83,7 +83,7 @@ private:
 	void drawNodes();
 	void drawSprings();
 	void loadLineVertices();
-	Vec3D checkForCollisions(Vec3D pos, Vec3D vel);
+	void checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel);
 
 public:
 	//CONSTRUCTORS AND DESTRUCTORS

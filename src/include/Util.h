@@ -51,6 +51,8 @@ namespace util
 	GLuint LoadTexture(const char* texFile);
 
 	void loadVecValues(float* arr, Vec3D v, int start);
+
+	Vec3D calcCollisionVel(Vec3D in_vel, Vec3D norm, float COR);
 }
 
 #endif

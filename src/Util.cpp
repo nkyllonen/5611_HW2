@@ -219,3 +219,12 @@ void util::loadVecValues(float* arr, Vec3D v, int start)
 	arr[start+1] = v.y;
 	arr[start+2] = v.z;
 }
+
+/*--------------------------------------------------------------*/
+// calcCollisionVel :
+/*--------------------------------------------------------------*/
+Vec3D util::calcCollisionVel(Vec3D in_vel, Vec3D norm, float COR)
+{
+	Vec3D b = (dotProduct(in_vel, norm))*norm;
+	return in_vel - (1 + COR)*b;
+}

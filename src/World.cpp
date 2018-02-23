@@ -314,15 +314,15 @@ void World::update(double dt)
 		}
 
 		//3. set positions accordingly
-		Vec3D temp_pos;
+		Vec3D temp_pos, new_pos, new_vel;
 
 		for (int i = 0; i < num_nodes; i++)
 		{
 			temp_pos = node_arr[i]->getPos() + dt*node_arr[i]->getVel();
-
+			checkForCollisions(temp_pos, node_arr[i]->getVel(), dt, new_pos, new_vel);
 			//check for collisions!
-			node_arr[i]->setVel(checkForCollisions(temp_pos, node_arr[i]->getVel()));
-			node_arr[i]->setPos(node_arr[i]->getPos() + dt*node_arr[i]->getVel());
+			node_arr[i]->setVel(new_vel);
+			node_arr[i]->setPos(new_pos);
 		}
 	}//FOR - substeps
 }//END update()
@@ -482,20 +482,43 @@ void World::loadLineVertices()
 // checkForCollisions : takes position, velocity returns new velocity
 //											after collision (returns original vel for no col)
 /*--------------------------------------------------------------*/
-Vec3D World::checkForCollisions(Vec3D pos, Vec3D vel)
+void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel)
 {
 	//1. check with floor
 	Vec3D f_size = floor->getSize();
 	Vec3D f_pos = floor->getPos();
 	float COR = 0.5;
 
-	Vec3D dist = pos - f_pos;
+	Vec3D f_dist = in_pos - f_pos;
 
-	if (dist.getY() < 0.2 && fabs(dist.getX()) < f_size.getX()/2 && fabs(dist.getZ()) < f_size.getZ()/2)
+	if (f_dist.getY() < f_size.getY() + 0.1 && fabs(f_dist.getX()) < f_size.getX()/2 && fabs(f_dist.getZ()) < f_size.getZ()/2)
 	{
-		Vec3D b = (dotProduct(vel, floor_normal))*floor_normal;
-		return vel - (1 + COR)*b;
+		out_vel = util::calcCollisionVel(in_vel, floor_normal, COR);
+		out_pos = in_pos + (dt+0.01)*out_vel;
+		return;
 	}
 
-	return vel; //no collision
+	//2. check with sphere
+	Vec3D s_size = sphere->getSize();
+	Vec3D s_pos = sphere->getPos();
+
+	Vec3D s_dist = in_pos - s_pos;
+	float dist_sq = dotProduct(s_dist, s_dist);
+	//float r_sq = dotProduct(s_size, s_size);
+	float r_sq = s_size.getX()/2.0;
+
+	if (dist_sq < r_sq)
+	{
+		//cout << "Sphere collision!" << endl;
+		s_dist.normalize();//radial vector normalized
+		out_vel = util::calcCollisionVel(in_vel, s_dist, COR);
+
+		//move outside of sphere along radial vector
+		out_pos = s_pos + (sqrt(r_sq) + 0.005)*s_dist;
+		return;
+	}
+
+	//no collisions
+	out_vel = in_vel;
+	out_pos = in_pos;
 }
