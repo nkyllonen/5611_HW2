@@ -43,20 +43,23 @@ private:
 	WorldObject* floor;
 	Vec3D floor_normal = Vec3D(0,1,0);
 
+	WorldObject* sphere;
+
 	//model information
-	float* cubeData;
+	float* modelData;
 	float* lineData;
-	float* sphereData;
+	int CUBE_START = 0;
 	int CUBE_VERTS = 0;
+	int SPHERE_START = 0;
 	int SPHERE_VERTS = 0;
+	int total_model_verts = 0;
 	int total_springs = 0;
 
 	//VAO and VBO GLuints
-	GLuint cube_vao;
-	GLuint cube_vbo[1];
+	GLuint model_vao;
+	GLuint model_vbo[1];
 	GLuint line_vao;
 	GLuint line_vbo[1];
-	GLuint sphere_vbo[1];
 
 	//Shader and Texture GLuints
 	GLuint phongProgram;

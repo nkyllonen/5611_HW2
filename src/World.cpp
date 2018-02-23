@@ -23,9 +23,9 @@ World::World(int w, int h)
 World::~World()
 {
 	delete floor;
-	delete[] cubeData;
+	delete sphere;
+	delete[] modelData;
 	delete[] lineData;
-	//delete[] sphereData;
 
 	for (int i = 0; i < num_nodes; i++)
 	{
@@ -70,48 +70,57 @@ bool World::loadModelData()
 	/////////////////////////////////
 	//CUBE
 	CUBE_VERTS = 0;
-	cubeData = util::loadModel("models/cube.txt", CUBE_VERTS);
-	cout << "\nNumber of vertices in cube model : " << CUBE_VERTS << endl;
+	float* cubeData = util::loadModel("models/cube.txt", CUBE_VERTS);
+	cout << "Number of vertices in cube model : " << CUBE_VERTS << endl;
+	total_model_verts += CUBE_VERTS;
 
 	//SPHERE
-	/*int SPHERE_VERTS = 0;
-	sphereData = util::loadModel("models/sphere.txt", SPHERE_VERTS);
-	cout << "\nNumber of vertices in sphere model : " << SPHERE_VERTS << endl;
-	total_verts += SPHERE_VERTS;
-	setSphereIndices(CUBE_VERTS, SPHERE_VERTS);*/
+	SPHERE_START = CUBE_VERTS;
+	float* sphereData = util::loadModel("models/sphere.txt", SPHERE_VERTS);
+	cout << "Number of vertices in sphere model : " << SPHERE_VERTS << endl << endl;
+	total_model_verts += SPHERE_VERTS;
 
 	/////////////////////////////////
 	//BUILD MODELDATA ARRAY
 	/////////////////////////////////
-	if (!(cubeData != nullptr))
+	if (!(cubeData != nullptr && sphereData != nullptr))
 	{
+		cout << "ERROR. Failed to load model(s)" << endl;
+		delete[] cubeData;
+		delete[] sphereData;
 		return false;
 	}
 
-	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring
+	modelData = new float[total_model_verts * 8];
+	copy(cubeData, cubeData + CUBE_VERTS * 8, modelData);
+	copy(sphereData, sphereData + SPHERE_VERTS * 8, modelData + (CUBE_VERTS * 8));
 
+	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring (3 x 2)
+
+	delete[] cubeData;
+	delete[] sphereData;
 	return true;
 }
 
 /*--------------------------------------------------------------*/
-// setupGraphics : load shaders, textures, set cube_vao + cube_vbo
+// setupGraphics : load shaders, textures, set model_vao + model_vbo
 /*--------------------------------------------------------------*/
 bool World::setupGraphics()
 {
 	/////////////////////////////////
-	//BUILD CUBE VAO + VBO
+	//BUILD CUBE&SPHERE VAO + VBOs
 	/////////////////////////////////
 	//This stores the VBO and attribute mappings in one object
-	glGenVertexArrays(1, &cube_vao); //Create a VAO
-	glBindVertexArray(cube_vao); //Bind the cube_vao to the current context
+	glGenVertexArrays(1, &model_vao); //Create a VAO
+	glBindVertexArray(model_vao); //Bind the model_vao to the current context
 
 	//Allocate memory on the graphics card to store geometry (vertex buffer object)
-	glGenBuffers(1, cube_vbo);  //Create 1 buffer called cube_vbo
-	glBindBuffer(GL_ARRAY_BUFFER, cube_vbo[0]); //Set the cube_vbo as the active array buffer (Only one buffer can be active at a time)
-	glBufferData(GL_ARRAY_BUFFER, CUBE_VERTS * 8 * sizeof(float), cubeData, GL_STATIC_DRAW); //upload vertices to cube_vbo
+	glGenBuffers(1, model_vbo);  //Create 1 buffer called model_vbo
+	glBindBuffer(GL_ARRAY_BUFFER, model_vbo[0]); //Set the model_vbo as the active array buffer (Only one buffer can be active at a time)
+	glBufferData(GL_ARRAY_BUFFER, total_model_verts * 8 * sizeof(float), modelData, GL_STATIC_DRAW); //upload vertices to model_vbo
 
 	/////////////////////////////////
-	//SETUP CUBE SHADERS
+	//SETUP CUBE SHADERS (model_vao attributes)
 	/////////////////////////////////
 	phongProgram = util::LoadShader("Shaders/phongTex.vert", "Shaders/phongTex.frag");
 
@@ -138,10 +147,8 @@ bool World::setupGraphics()
 	glEnableVertexAttribArray(normAttrib);
 
 	GLint texAttrib = glGetAttribLocation(phongProgram, "inTexcoord");
-	glEnableVertexAttribArray(texAttrib);
 	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-
-	glBindVertexArray(0); //Unbind the VAO in case we want to create a new one
+	glEnableVertexAttribArray(texAttrib);
 
 	/////////////////////////////////
 	//BUILD LINE VAO + VBO
@@ -209,19 +216,20 @@ void World::draw(Camera * cam)
 	glBindTexture(GL_TEXTURE_2D, tex1);
 	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
 
-	glBindVertexArray(cube_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, cube_vbo[0]); //Set the cube_vbo as the active
+	glBindVertexArray(model_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, model_vbo[0]); //Set the model_vbo as the active VBO
 
 	glUniform1i(uniTexID, -1); //Set texture ID to use for nodes and springs (-1 = no texture)
-
 	drawNodes();
 
 	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
 	floor->draw(phongProgram);
 
+	glUniform1i(uniTexID, -1);
+	sphere->draw(phongProgram);
 
 	glUseProgram(flatProgram);
-glBindVertexArray(line_vao);
+	glBindVertexArray(line_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
 
 	//new uniforms for the flat shading program
@@ -330,7 +338,7 @@ void World::init()
 	//center cloth on (0,0)
 	//flattened 2D -> 1D arrays
 	node_arr = new Node*[num_nodes];
-	printf("Allocated array of %i Nodes.\n", num_nodes);
+	printf("\nAllocated array of %i Nodes.\n", num_nodes);
 
 	for (int i = 0; i < width; i++)
 	{
@@ -346,7 +354,7 @@ void World::init()
 			mat.setDiffuse(glm::vec3(0, 1, 0));
 			mat.setSpecular(glm::vec3(0.75, 0.75, 0.75));
 			n->setMaterial(mat);
-			n->setVertexInfo(0, CUBE_VERTS);
+			n->setVertexInfo(CUBE_START, CUBE_VERTS);
 			n->setSize(Vec3D(0.25,0.25,0.05));
 
 			node_arr[i + j*width] = n;
@@ -363,7 +371,7 @@ void World::init()
 
 	//initialize floor to be below cloth
 	floor = new WorldObject(Vec3D(0,-0.5*height - 2, 0));
-	floor->setVertexInfo(0, CUBE_VERTS);
+	floor->setVertexInfo(CUBE_START, CUBE_VERTS);
 
 	Material mat = Material();
 	mat.setAmbient(glm::vec3(0.7, 0.7, 0.7));
@@ -372,6 +380,18 @@ void World::init()
 
 	floor->setMaterial(mat);
 	floor->setSize(Vec3D(width*5, 0.1, width)); //xz plane
+
+	//initialize a sphere
+	sphere = new WorldObject(Vec3D(0, -0.5*height, 0));
+	sphere->setVertexInfo(SPHERE_START, SPHERE_VERTS);
+
+	Material mat2 = Material();
+	mat2.setAmbient(glm::vec3(0.5, 0, 1));
+	mat2.setDiffuse(glm::vec3(0.5, 0, 1));
+	mat2.setSpecular(glm::vec3(0.5, 0.5, 0.5));
+
+	sphere->setMaterial(mat2);
+	sphere->setSize(Vec3D(1, 1, 1));
 }//END init
 
 /*--------------------------------------------------------------*/
@@ -398,6 +418,7 @@ void World::reset()
 
 	delete [] node_arr;
 	delete floor;
+	delete sphere;
 	init();
 }//END reset
 
