@@ -23,8 +23,9 @@ World::World(int w, int h)
 World::~World()
 {
 	delete floor;
-	delete[] modelData;
+	delete[] cubeData;
 	delete[] lineData;
+	//delete[] sphereData;
 
 	for (int i = 0; i < num_nodes; i++)
 	{
@@ -37,18 +38,6 @@ World::~World()
 /*----------------------------*/
 // SETTERS
 /*----------------------------*/
-void World::setCubeIndices(int start, int tris)
-{
-	CUBE_START = start;
-	CUBE_VERTS = tris;
-}
-
-void World::setSphereIndices(int start, int tris)
-{
-	SPHERE_START = start;
-	SPHERE_VERTS = tris;
-}
-
 void World::adjustRestLen(float x)
 {
 	restlen += x;
@@ -72,7 +61,7 @@ int World::getHeight()
 // OTHERS
 /*----------------------------*/
 /*--------------------------------------------------------------*/
-// loadModelData : load in all models and store data into the modelData array
+// loadModelData : load in all models and store data into the cubeData array
 /*--------------------------------------------------------------*/
 bool World::loadModelData()
 {
@@ -80,39 +69,24 @@ bool World::loadModelData()
 	//LOAD IN MODELS
 	/////////////////////////////////
 	//CUBE
-	int CUBE_VERTS = 0;
-	float* cubeData = util::loadModel("models/cube.txt", CUBE_VERTS);
+	CUBE_VERTS = 0;
+	cubeData = util::loadModel("models/cube.txt", CUBE_VERTS);
 	cout << "\nNumber of vertices in cube model : " << CUBE_VERTS << endl;
-	total_verts += CUBE_VERTS;
-	setCubeIndices(0, CUBE_VERTS);
 
 	//SPHERE
 	/*int SPHERE_VERTS = 0;
-	float* sphereData = util::loadModel("models/sphere.txt", SPHERE_VERTS);
+	sphereData = util::loadModel("models/sphere.txt", SPHERE_VERTS);
 	cout << "\nNumber of vertices in sphere model : " << SPHERE_VERTS << endl;
 	total_verts += SPHERE_VERTS;
-	setSphereIndices(CUBE_VERTS, SPHERE_VERTS);
+	setSphereIndices(CUBE_VERTS, SPHERE_VERTS);*/
 
 	/////////////////////////////////
 	//BUILD MODELDATA ARRAY
 	/////////////////////////////////
-	if (!(cubeData != nullptr && sphereData != nullptr))
+	if (!(cubeData != nullptr))
 	{
-		delete[] cubeData;
-		delete[] sphereData;
-		return false;
-	}*/
-	if (cubeData == nullptr)
-	{
-		delete[] cubeData;
 		return false;
 	}
-	modelData = new float[total_verts * 8];
-	//copy data into modelData array
-	copy(cubeData, cubeData + CUBE_VERTS * 8, modelData);
-	//copy(sphereData, sphereData + SPHERE_VERTS * 8, modelData + (CUBE_VERTS * 8));
-	delete[] cubeData;
-	//delete[] sphereData;
 
 	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring
 
@@ -134,7 +108,7 @@ bool World::setupGraphics()
 	//Allocate memory on the graphics card to store geometry (vertex buffer object)
 	glGenBuffers(1, cube_vbo);  //Create 1 buffer called cube_vbo
 	glBindBuffer(GL_ARRAY_BUFFER, cube_vbo[0]); //Set the cube_vbo as the active array buffer (Only one buffer can be active at a time)
-	glBufferData(GL_ARRAY_BUFFER, total_verts * 8 * sizeof(float), modelData, GL_STATIC_DRAW); //upload vertices to cube_vbo
+	glBufferData(GL_ARRAY_BUFFER, CUBE_VERTS * 8 * sizeof(float), cubeData, GL_STATIC_DRAW); //upload vertices to cube_vbo
 
 	/////////////////////////////////
 	//SETUP CUBE SHADERS
@@ -321,18 +295,25 @@ void World::update(double dt)
 		//2.3 add gravity to each velocity
 		for (int i = 0; i < num_nodes; i++)
 		{
-			node_arr[i]->setVel(node_arr[i]->getVel() + gravity);
-		}
-
-		//2.4 fix top row so it doesn't move
-		for (int i = 0; i < width; i++)
-		{
-			node_arr[i]->setVel(Vec3D(0,0,0));
+			if (node_arr[i]->getIsFixed())
+			{
+				node_arr[i]->setVel(Vec3D(0,0,0));
+			}
+			else
+			{
+				node_arr[i]->setVel(node_arr[i]->getVel() + gravity);
+			}
 		}
 
 		//3. set positions accordingly
+		Vec3D temp_pos;
+
 		for (int i = 0; i < num_nodes; i++)
 		{
+			temp_pos = node_arr[i]->getPos() + dt*node_arr[i]->getVel();
+
+			//check for collisions!
+			node_arr[i]->setVel(checkForCollisions(temp_pos, node_arr[i]->getVel()));
 			node_arr[i]->setPos(node_arr[i]->getPos() + dt*node_arr[i]->getVel());
 		}
 	}//FOR - substeps
@@ -365,18 +346,24 @@ void World::init()
 			mat.setDiffuse(glm::vec3(0, 1, 0));
 			mat.setSpecular(glm::vec3(0.75, 0.75, 0.75));
 			n->setMaterial(mat);
-			n->setVertexInfo(CUBE_START, CUBE_VERTS);
+			n->setVertexInfo(0, CUBE_VERTS);
 			n->setSize(Vec3D(0.25,0.25,0.05));
 
 			node_arr[i + j*width] = n;
 		}
 	}
 
+	//default: set top row fixed
+	for (int i = 0; i < width; i++)
+	{
+		node_arr[i]->setFixed(true);
+	}
+
 	loadLineVertices();
 
 	//initialize floor to be below cloth
 	floor = new WorldObject(Vec3D(0,-0.5*height - 2, 0));
-	floor->setVertexInfo(CUBE_START, CUBE_VERTS);
+	floor->setVertexInfo(0, CUBE_VERTS);
 
 	Material mat = Material();
 	mat.setAmbient(glm::vec3(0.7, 0.7, 0.7));
@@ -384,10 +371,12 @@ void World::init()
 	mat.setSpecular(glm::vec3(0, 0, 0));
 
 	floor->setMaterial(mat);
-	floor->setSize(Vec3D(width*2, 0.1, width)); //xz plane
-}//END init()
+	floor->setSize(Vec3D(width*5, 0.1, width)); //xz plane
+}//END init
 
-//add velocity v to top row of Nodes
+/*--------------------------------------------------------------*/
+// moveby : add velocity v to top row of Nodes
+/*--------------------------------------------------------------*/
 void World::moveBy(Vec3D v)
 {
 	for (int i = 0; i < width; i++)
@@ -408,8 +397,9 @@ void World::reset()
 	}
 
 	delete [] node_arr;
+	delete floor;
 	init();
-}
+}//END reset
 
 /*----------------------------*/
 // PRIVATE FUNCTIONS
@@ -420,17 +410,19 @@ void World::drawNodes()
 	{
 			node_arr[i]->draw(phongProgram);
 	}
-}
+}//END drawNodes
 
 void World::drawSprings()
 {
 	loadLineVertices();
 	glBufferData(GL_ARRAY_BUFFER, total_springs * 6 * sizeof(float), lineData, GL_STREAM_DRAW);
-	glLineWidth(5);
+	glLineWidth(2);
 	glDrawArrays(GL_LINES, 0, total_springs * 2);
-}
+}//END drawSprings
 
-//loop through nodes array and plug positions into lineData
+/*--------------------------------------------------------------*/
+// loadLineVertices : loop through nodes array and plug positions into lineData
+/*--------------------------------------------------------------*/
 void World::loadLineVertices()
 {
 	int count = 0;
@@ -458,20 +450,31 @@ void World::loadLineVertices()
 		pi = node_arr[i]->getPos();
 		pii = node_arr[i+width]->getPos();
 
-		//pi.print();
-		//cout << endl;
-		//pii.print();
-
 		util::loadVecValues(lineData, pi, count);
 		count += 3;
 		util::loadVecValues(lineData, pii, count);
 		count += 3;
 	}
-	/*cout << "width: " << width << endl;
-	cout << "height: " << height << endl;
-	pi.print();
-	pii.print();
-	cout << "total springs: " << total_springs << endl;
-	cout << lineData[3] << endl;
-	cout << endl;*/
+}//END loadLineVertices
+
+/*--------------------------------------------------------------*/
+// checkForCollisions : takes position, velocity returns new velocity
+//											after collision (returns original vel for no col)
+/*--------------------------------------------------------------*/
+Vec3D World::checkForCollisions(Vec3D pos, Vec3D vel)
+{
+	//1. check with floor
+	Vec3D f_size = floor->getSize();
+	Vec3D f_pos = floor->getPos();
+	float COR = 0.5;
+
+	Vec3D dist = pos - f_pos;
+
+	if (dist.getY() < 0.2 && fabs(dist.getX()) < f_size.getX()/2 && fabs(dist.getZ()) < f_size.getZ()/2)
+	{
+		Vec3D b = (dotProduct(vel, floor_normal))*floor_normal;
+		return vel - (1 + COR)*b;
+	}
+
+	return vel; //no collision
 }

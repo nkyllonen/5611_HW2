@@ -21,6 +21,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -39,24 +40,23 @@ private:
 	int width;
 	int height;
 
-	int total_verts = 0;
-	float* modelData;
-	int total_springs = 0;
-	float* lineData;
-
 	WorldObject* floor;
+	Vec3D floor_normal = Vec3D(0,1,0);
 
-	//modelData indices
-	int CUBE_START = 0;
+	//model information
+	float* cubeData;
+	float* lineData;
+	float* sphereData;
 	int CUBE_VERTS = 0;
-	int SPHERE_START = 0;
 	int SPHERE_VERTS = 0;
+	int total_springs = 0;
 
 	//VAO and VBO GLuints
 	GLuint cube_vao;
 	GLuint cube_vbo[1];
 	GLuint line_vao;
 	GLuint line_vbo[1];
+	GLuint sphere_vbo[1];
 
 	//Shader and Texture GLuints
 	GLuint phongProgram;
@@ -72,7 +72,7 @@ private:
 	Node** node_arr;
 	float restlen = 1.0;
 	const float ks = 300.0;
-	const float kd = 50.0;
+	const float kd = 30.0;
 	const float mass = 1.0;
 	Vec3D gravity = Vec3D(0,-0.1,0);
 
@@ -80,6 +80,7 @@ private:
 	void drawNodes();
 	void drawSprings();
 	void loadLineVertices();
+	Vec3D checkForCollisions(Vec3D pos, Vec3D vel);
 
 public:
 	//CONSTRUCTORS AND DESTRUCTORS
@@ -88,8 +89,6 @@ public:
 	~World();
 
 	//SETTERS
-	void setCubeIndices(int start, int tris);
-	void setSphereIndices(int start, int tris);
 	void adjustRestLen(float x);
 
 	//GETTERS
