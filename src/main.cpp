@@ -335,6 +335,20 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 		cur_state = MOVE_SPHERE;
 		cout << "--State changed to MOVE_SPHERE--" << endl;
 		break;
+	/////////////////////////////////
+	//CHANGE CLOTH STATE WITH T
+	/////////////////////////////////
+	case SDLK_t:
+		cout << "--Cloth state changed--" << endl;
+		(myWorld->cloth_state == SKELETON) ? myWorld->cloth_state = TEXTURED : myWorld->cloth_state = SKELETON;
+		break;
+	/////////////////////////////////
+	//CHANGE PIN STATE WITH P
+	/////////////////////////////////
+	case SDLK_p:
+		cout << "--Pin state changed--" << endl;
+		(myWorld->pin_state == PIN_TOP) ? myWorld->pin_state = PIN_CORNERS : myWorld->pin_state = PIN_TOP;
+		break;
 	default:
 		printf("ERROR: Invalid key pressed (%s)\n", SDL_GetKeyName(event.keysym.sym));
 		break;

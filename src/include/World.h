@@ -34,6 +34,18 @@
 #include "WorldObject.h"
 #include "Node.h"
 
+enum cloth_type
+{
+	TEXTURED,
+	SKELETON
+};
+
+enum pin_type
+{
+	PIN_TOP,
+	PIN_CORNERS
+};
+
 class World
 {
 private:
@@ -74,9 +86,9 @@ private:
 	int num_nodes;
 	Node** node_arr;
 	float restlen = 1.0;
-	const float ks = 500.0;
-	const float kd = 30.0;
-	const float mass = 0.5;
+	const float ks = 1000.0;
+	const float kd = 50.0;
+	const float mass = 0.001;
 	Vec3D gravity = Vec3D(0,-0.1,0);
 
 	//PRIVATE FUNCTIONS
@@ -84,8 +96,12 @@ private:
 	void drawSprings();
 	void loadLineVertices();
 	void checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel);
+	void loadClothTexCoords();
 
 public:
+	int cloth_state = SKELETON;
+	int pin_state = PIN_CORNERS;
+
 	//CONSTRUCTORS AND DESTRUCTORS
 	World();
 	World(int w, int h);

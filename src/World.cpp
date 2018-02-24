@@ -318,11 +318,14 @@ void World::update(double dt)
 
 		for (int i = 0; i < num_nodes; i++)
 		{
-			temp_pos = node_arr[i]->getPos() + dt*node_arr[i]->getVel();
-			checkForCollisions(temp_pos, node_arr[i]->getVel(), dt, new_pos, new_vel);
-			//check for collisions!
-			node_arr[i]->setVel(new_vel);
-			node_arr[i]->setPos(new_pos);
+			if (node_arr[i]->getIsFixed() == false) //nly bother if they're not fixed
+			{
+				temp_pos = node_arr[i]->getPos() + dt*node_arr[i]->getVel();
+				checkForCollisions(temp_pos, node_arr[i]->getVel(), dt, new_pos, new_vel);
+				//check for collisions!
+				node_arr[i]->setVel(new_vel);
+				node_arr[i]->setPos(new_pos);
+			}
 		}
 	}//FOR - substeps
 }//END update()
@@ -344,8 +347,8 @@ void World::init()
 	{
 		for (int j = 0; j < height; j++)
 		{
-			pos.setX(i - (width/2)); //draw left to right
-			pos.setY((height/2) - j); //draw top to bottom
+			pos.setX((i - (width/2))*restlen); //draw left to right
+			pos.setY(((height/2) - j)*restlen); //draw top to bottom
 			n = new Node(pos);
 
 			//green cube
@@ -361,10 +364,17 @@ void World::init()
 		}
 	}
 
-	//default: set top row fixed
-	for (int i = 0; i < width; i++)
+	if (pin_state == PIN_TOP)
 	{
-		node_arr[i]->setFixed(true);
+		for (int i = 0; i < width; i++)
+		{
+			node_arr[i]->setFixed(true);
+		}
+	}
+	else if(pin_state == PIN_CORNERS)
+	{
+		node_arr[0]->setFixed(true);
+		node_arr[width-1]->setFixed(true);
 	}
 
 	loadLineVertices();
@@ -410,7 +420,7 @@ void World::moveClothBy(Vec3D v)
 /*--------------------------------------------------------------*/
 void World::reset()
 {
-	restlen = 1.0;
+	//restlen = 1.0;
 	for (int i = 0; i < num_nodes; i++)
 	{
 		delete node_arr[i];
@@ -423,7 +433,7 @@ void World::reset()
 }//END reset
 
 /*--------------------------------------------------------------*/
-// moveSphereby : add velocity v to sphere
+// moveSphereby : add velocity v to sphere to displace
 /*--------------------------------------------------------------*/
 void World::moveSphereBy(Vec3D v)
 {
@@ -515,7 +525,7 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	//float r_sq = dotProduct(s_size, s_size);
 	float r_sq = s_size.getX();
 
-	if (dist_sq < r_sq + 0.001)
+	if (dist_sq < r_sq)
 	{
 		//cout << "Sphere collision!" << endl;
 		s_dist.normalize();//radial vector normalized
@@ -529,4 +539,12 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	//no collisions
 	out_vel = in_vel;
 	out_pos = in_pos;
+}
+
+/*--------------------------------------------------------------*/
+// loadClothTexCoords :
+/*--------------------------------------------------------------*/
+void World::loadClothTexCoords()
+{
+
 }
