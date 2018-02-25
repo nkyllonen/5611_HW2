@@ -190,58 +190,14 @@ void World::draw(Camera * cam)
 	glClearColor(.2f, 0.4f, 0.8f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(phongProgram); //Set the active shader (only one can be used at a time)
-
-	//vertex shader uniforms
-	GLint uniView = glGetUniformLocation(phongProgram, "view");
-	GLint uniProj = glGetUniformLocation(phongProgram, "proj");
-	GLint uniTexID = glGetUniformLocation(phongProgram, "texID");
-
-	//build view matrix from Camera
-	glm::mat4 view = glm::lookAt(
-		util::vec3DtoGLM(cam->getPos()),
-		util::vec3DtoGLM(cam->getPos() + cam->getDir()),  //Look at point
-		util::vec3DtoGLM(cam->getUp()));
-
-	glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
-
-	glm::mat4 proj = glm::perspective(3.14f / 4, 800.0f / 600.0f, 0.1f, 100.0f); //FOV, aspect, near, far
-	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex0);
-	glUniform1i(glGetUniformLocation(phongProgram, "tex0"), 0);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, tex1);
-	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
-
-	glBindVertexArray(model_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, model_vbo[0]); //Set the model_vbo as the active VBO
-
-	glUniform1i(uniTexID, -1); //Set texture ID to use for nodes and springs (-1 = no texture)
-	drawNodes();
-
-	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
-	floor->draw(phongProgram);
-
-	glUniform1i(uniTexID, -1);
-	sphere->draw(phongProgram);
-
-	glUseProgram(flatProgram);
-	glBindVertexArray(line_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
-
-	//new uniforms for the flat shading program
-	GLint uniLineModel = glGetUniformLocation(flatProgram, "model");
-	GLint uniLineView = glGetUniformLocation(flatProgram, "view");
-	GLint uniLineProj = glGetUniformLocation(flatProgram, "proj");
-	glm::mat4 model;
-	glUniformMatrix4fv(uniLineModel, 1, GL_FALSE, glm::value_ptr(model));
-	glUniformMatrix4fv(uniLineView, 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(uniLineProj, 1, GL_FALSE, glm::value_ptr(proj));
-
-	drawSprings();
+	if (cloth_state == SKELETON)
+	{
+		drawSkeleton(cam);
+	}
+	else if (cloth_state == TEXTURED)
+	{
+		drawTextured(cam);
+	}
 }
 
 /*--------------------------------------------------------------*/
@@ -541,6 +497,73 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 // loadClothTexCoords :
 /*--------------------------------------------------------------*/
 void World::loadClothTexCoords()
+{
+
+}
+
+/*--------------------------------------------------------------*/
+// drawSkeleton : draws Nodes and springs
+/*--------------------------------------------------------------*/
+void World::drawSkeleton(Camera* cam)
+{
+	glUseProgram(phongProgram); //Set the active shader (only one can be used at a time)
+
+	//vertex shader uniforms
+	GLint uniView = glGetUniformLocation(phongProgram, "view");
+	GLint uniProj = glGetUniformLocation(phongProgram, "proj");
+	GLint uniTexID = glGetUniformLocation(phongProgram, "texID");
+
+	//build view matrix from Camera
+	glm::mat4 view = glm::lookAt(
+		util::vec3DtoGLM(cam->getPos()),
+		util::vec3DtoGLM(cam->getPos() + cam->getDir()),  //Look at point
+		util::vec3DtoGLM(cam->getUp()));
+
+	glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
+
+	glm::mat4 proj = glm::perspective(3.14f / 4, 800.0f / 600.0f, 0.1f, 100.0f); //FOV, aspect, near, far
+	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex0);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex0"), 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, tex1);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
+
+	glBindVertexArray(model_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, model_vbo[0]); //Set the model_vbo as the active VBO
+
+	glUniform1i(uniTexID, -1); //Set texture ID to use for nodes and springs (-1 = no texture)
+	drawNodes();
+
+	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
+	floor->draw(phongProgram);
+
+	glUniform1i(uniTexID, -1);
+	sphere->draw(phongProgram);
+
+	glUseProgram(flatProgram);
+	glBindVertexArray(line_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
+
+	//new uniforms for the flat shading program
+	GLint uniLineModel = glGetUniformLocation(flatProgram, "model");
+	GLint uniLineView = glGetUniformLocation(flatProgram, "view");
+	GLint uniLineProj = glGetUniformLocation(flatProgram, "proj");
+	glm::mat4 model;
+	glUniformMatrix4fv(uniLineModel, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(uniLineView, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(uniLineProj, 1, GL_FALSE, glm::value_ptr(proj));
+
+	drawSprings();
+}
+
+/*--------------------------------------------------------------*/
+// drawTextured : draws textured cloth
+/*--------------------------------------------------------------*/
+void World::drawTextured(Camera* cam)
 {
 
 }
