@@ -125,7 +125,7 @@ bool World::setupGraphics()
 	phongProgram = util::LoadShader("Shaders/phongTex.vert", "Shaders/phongTex.frag");
 
 	//load in textures
-	tex0 = util::LoadTexture("textures/wood.bmp");
+	tex0 = util::LoadTexture("textures/fabric1.bmp");
 	tex1 = util::LoadTexture("textures/grey_stones.bmp");
 
 	if (tex0 == -1 || tex1 == -1 || phongProgram == -1)
@@ -137,18 +137,18 @@ bool World::setupGraphics()
 
 	//Tell OpenGL how to set fragment shader input
 	GLint posAttrib = glGetAttribLocation(phongProgram, "position");
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
+	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0); //positions first
 	//Attribute, vals/attrib., type, normalized?, stride, offset
 	//Binds to VBO current GL_ARRAY_BUFFER
 	glEnableVertexAttribArray(posAttrib);
 
-	GLint normAttrib = glGetAttribLocation(phongProgram, "inNormal");
-	glVertexAttribPointer(normAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
-	glEnableVertexAttribArray(normAttrib);
-
 	GLint texAttrib = glGetAttribLocation(phongProgram, "inTexcoord");
-	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); //texcoords second
 	glEnableVertexAttribArray(texAttrib);
+
+	GLint normAttrib = glGetAttribLocation(phongProgram, "inNormal");
+	glVertexAttribPointer(normAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float))); //normals last
+	glEnableVertexAttribArray(normAttrib);
 
 	/////////////////////////////////
 	//BUILD LINE VAO + VBO
@@ -477,9 +477,7 @@ void World::loadLineVertices()
 			pii = node_arr[i+1]->getPos();
 
 			util::loadVecValues(lineData, pi, count);
-			count += 3;
 			util::loadVecValues(lineData, pii, count);
-			count += 3;
 		}
 	}
 
@@ -490,9 +488,7 @@ void World::loadLineVertices()
 		pii = node_arr[i+width]->getPos();
 
 		util::loadVecValues(lineData, pi, count);
-		count += 3;
 		util::loadVecValues(lineData, pii, count);
-		count += 3;
 	}
 }//END loadLineVertices
 
