@@ -18,6 +18,7 @@ World::World(int w, int h)
 	height = h;
 	num_nodes = width * height;
 	total_springs = (width - 1) * height + (height - 1) * width;
+	total_triangles = (width - 1) * (height - 1) * 2;
 }
 
 World::~World()
@@ -26,6 +27,8 @@ World::~World()
 	delete sphere;
 	delete[] modelData;
 	delete[] lineData;
+	delete[] texturedData;
+	delete[] texturedIndices;
 
 	for (int i = 0; i < num_nodes; i++)
 	{
@@ -94,11 +97,18 @@ bool World::loadModelData()
 	modelData = new float[total_model_verts * 8];
 	copy(cubeData, cubeData + CUBE_VERTS * 8, modelData);
 	copy(sphereData, sphereData + SPHERE_VERTS * 8, modelData + (CUBE_VERTS * 8));
-
-	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring (3 x 2)
-
 	delete[] cubeData;
 	delete[] sphereData;
+
+	/////////////////////////////////
+	//BUILD LINE + TEXTURED ARRAYS
+	/////////////////////////////////
+	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring (3 x 2)
+	texturedData = new float[num_nodes * 6]; //each "node" has a pos + norm (3 + 3 floats)
+	texturedCoords = new float[total_triangles * 3 * 2]; //each triangle has 3 verts, each with 2 coords
+
+	//load textures coords now since they're static
+
 	return true;
 }
 
@@ -494,12 +504,70 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 }
 
 /*--------------------------------------------------------------*/
-// loadClothTexCoords :
+// loadTexturedPosAndNorm : calculates & stores vertex position
+//													and normal data in texturedData
 /*--------------------------------------------------------------*/
-void World::loadClothTexCoords()
+void World::loadTexturedPosAndNorm()
 {
+	int cur_index = 0;
+	Vec3D vec1, vec2, pos_i, temp_norm;
 
-}
+	for (int i=0; i < num_nodes; i++)
+	{
+		pos_i = node_arr[i]->getPos();
+
+		//1. load position
+		util::loadVecValues(texturedData, pos_i, cur_index);
+
+		//2. calc and load normal
+		if (i >= width * (height - 1)) //bottom
+		{
+			vec1 = node_arr[i-width]->getPos() - pos_i;
+			vec2 = node_arr[i+1]->getPos() - pos_i;
+		}
+		else if ((i+1)%width == 0) //right side
+		{
+			vec2 = node_arr[i-1]->getPos() - pos_i;
+			vec1 = node_arr[i+width]->getPos() - pos_i;
+		}
+		else //all not special cases
+		{
+			vec1 = node_arr[i+width]->getPos() - pos_i;
+			vec2 = node_arr[i+1]->getPos() - pos_i;
+		}
+
+		temp_norm = cross(vec1, vec2);
+		temp_norm.normalize();
+
+		util::loadVecValues(texturedData, temp_norm, cur_index);
+	}//END for
+}//END loadTexturedPosAndNorm
+
+/*--------------------------------------------------------------*/
+// loadTextureCoords :
+/*--------------------------------------------------------------*/
+void World::loadTextureCoords()
+{
+	int cur_index = 0;
+	float u = 0, v = 0;
+
+	for (int row = 0; row < height; row++)
+	{
+		//1. v is constant along each row
+		v = util::interp(1, 0, (float)row/(height - 1));
+
+		for (int col = 0; col < width; col++)
+		{
+			//2. calc u
+			u = util::interp(0, 1, (float)col/(width - 1));
+
+			//3. store in texturedCoords (u,v)
+			texturedCoords[cur_index] = u;
+			texturedCoords[cur_index+1] = v;
+			cur_index += 2;
+		}//END col - for
+	}//END row - for
+}//END loadTextureCoords
 
 /*--------------------------------------------------------------*/
 // drawSkeleton : draws Nodes and springs

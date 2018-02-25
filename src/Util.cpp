@@ -229,3 +229,15 @@ Vec3D util::calcCollisionVel(Vec3D in_vel, Vec3D norm, float COR)
 	Vec3D b = (dotProduct(in_vel, norm))*norm;
 	return in_vel - (1 + COR)*b;
 }
+
+/*--------------------------------------------------------------*/
+// interp :
+/*--------------------------------------------------------------*/
+float util::interp(float start, float end, float t)
+{
+	t = fabs(t); //check for negative
+
+	if (t > 1) t = 1; //clamp to [0,1]
+
+	return start + t*(end - start);
+}

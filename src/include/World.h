@@ -76,6 +76,8 @@ private:
 	GLuint model_vbo[1];
 	GLuint line_vao;
 	GLuint line_vbo[1];
+	GLuint textured_vao;
+	GLuint textured_vbos[3];
 
 	//Shader and Texture GLuints
 	GLuint phongProgram;
@@ -100,7 +102,8 @@ private:
 	void drawSprings();
 	void loadLineVertices();
 	void checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel);
-	void loadClothTexCoords();
+	void loadTexturedPosAndNorm();
+	void loadTextureCoords();
 	void drawSkeleton(Camera* cam);
 	void drawTextured(Camera* cam);
 
