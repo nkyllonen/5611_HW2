@@ -105,9 +105,14 @@ bool World::loadModelData()
 	/////////////////////////////////
 	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring (3 x 2)
 	texturedData = new float[num_nodes * 6]; //each "node" has a pos + norm (3 + 3 floats)
-	texturedCoords = new float[total_triangles * 3 * 2]; //each triangle has 3 verts, each with 2 coords
 
 	//load textures coords now since they're static
+	texturedCoords = new float[total_triangles * 3 * 2]; //each triangle has 3 verts, each with 2 coords
+	loadTextureCoords();
+
+	//load indices now since they're static
+	texturedIndices = new ushort[total_triangles * 3];
+	loadTexturedIndices();
 
 	return true;
 }
@@ -568,6 +573,30 @@ void World::loadTextureCoords()
 		}//END col - for
 	}//END row - for
 }//END loadTextureCoords
+
+/*--------------------------------------------------------------*/
+// loadTexturedIndices :
+/*--------------------------------------------------------------*/
+void World::loadTexturedIndices()
+{
+	int cur_index = 0;
+
+	for (int i = 0; i < width*(height-1); i++) //don't apply to bottom row
+	{
+		if ((i+1) % width != 0) //not the right side
+		{
+			//lower triangle
+			texturedIndices[cur_index] = i;
+			texturedIndices[++cur_index] = i + width;
+			texturedIndices[++cur_index] = i + width + 1;
+
+			//upper triangle
+			texturedIndices[++cur_index] = i;
+			texturedIndices[++cur_index] = i + width + 1;
+			texturedIndices[++cur_index] = i + 1;
+		}
+	}
+}//END loadTexturedIndices
 
 /*--------------------------------------------------------------*/
 // drawSkeleton : draws Nodes and springs

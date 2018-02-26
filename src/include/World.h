@@ -57,7 +57,7 @@ private:
 
 	WorldObject* sphere;
 
-	//model information
+	//VBO data
 	float* modelData;
 	float* lineData;
 	float* texturedData;
@@ -104,6 +104,7 @@ private:
 	void checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel);
 	void loadTexturedPosAndNorm();
 	void loadTextureCoords();
+	void loadTexturedIndices();
 	void drawSkeleton(Camera* cam);
 	void drawTextured(Camera* cam);
 
