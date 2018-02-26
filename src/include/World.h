@@ -86,6 +86,8 @@ private:
 	GLuint tex0;
 	GLuint tex1;
 
+	Material cloth_mat = Material();
+
 	//updating constant(s)
 	const int NUM_SUBSTEPS = 10;
 

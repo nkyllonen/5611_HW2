@@ -112,7 +112,7 @@ bool World::loadModelData()
 
 	//load textures coords now since they're static
 	texturedCoords = new float[num_nodes * 2]; //2 coords per vertex
-	cout << "Allocated texturedCoords : " << total_triangles * 3 * 2 << endl;
+	cout << "Allocated texturedCoords : " << num_nodes * 2 << endl;
 	loadTextureCoords();
 
 	//load indices now since they're static
@@ -415,6 +415,11 @@ void World::init()
 
 	sphere->setMaterial(mat2);
 	sphere->setSize(Vec3D(3,3,3));
+
+	//initialize cloth material
+	cloth_mat.setAmbient(glm::vec3(1,1,1));
+	cloth_mat.setDiffuse(glm::vec3(1,1,1));
+	cloth_mat.setSpecular(glm::vec3(0, 0, 0));
 }//END init
 
 /*--------------------------------------------------------------*/
@@ -512,8 +517,8 @@ void World::drawSkeleton(Camera* cam)
 	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
 	floor->draw(phongProgram);
 
-	glUniform1i(uniTexID, -1);
-	sphere->draw(phongProgram);
+	//glUniform1i(uniTexID, -1);
+	//sphere->draw(phongProgram);
 
 	glUseProgram(flatProgram);
 	glBindVertexArray(line_vao);
@@ -563,19 +568,49 @@ void World::drawTextured(Camera* cam)
 	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
 
 	glBindVertexArray(textured_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[0]);
 
 	//load new positions and normals
 	loadTexturedPosAndNorm();
 	glBufferData(GL_ARRAY_BUFFER, num_nodes * 6 * sizeof(float), texturedData, GL_STREAM_DRAW); //dynamic
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textured_ibo[0]);
 	glUniform1i(uniTexID, 0);
+
+	//set up uniforms for shader
+	GLint uniModel = glGetUniformLocation(phongProgram, "model");
+
+	glm::mat4 model;
+	glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+
+	//fragment shader uniforms (from Material)
+	GLint uniform_ka = glGetUniformLocation(phongProgram, "ka");
+	GLint uniform_kd = glGetUniformLocation(phongProgram, "kd");
+	GLint uniform_ks = glGetUniformLocation(phongProgram, "ks");
+	GLint uniform_s = glGetUniformLocation(phongProgram, "s");
+
+	glm::vec3 mat_AMB = cloth_mat.getAmbient();
+	glUniform3f(uniform_ka, mat_AMB[0], mat_AMB[1], mat_AMB[2]);
+
+	glm::vec3 mat_DIF = cloth_mat.getDiffuse();
+	glUniform3f(uniform_kd, mat_DIF[0], mat_DIF[1], mat_DIF[2]);
+
+	glm::vec3 mat_SPEC = cloth_mat.getSpecular();
+	glUniform3f(uniform_ks, mat_SPEC[0], mat_SPEC[1], mat_SPEC[2]);
+
+	glUniform1f(uniform_s, cloth_mat.getNS());
+
 	glDrawElements(GL_TRIANGLES, total_triangles * 3, GL_UNSIGNED_SHORT, 0);
+
+	//switch to model_vao to render floor and sphere
+	glBindVertexArray(model_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, model_vbo[0]); //Set the model_vbo as the active VBO
 
 	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
 	floor->draw(phongProgram);
 
-	glUniform1i(uniTexID, -1);
-	sphere->draw(phongProgram);
+	//glUniform1i(uniTexID, -1);
+	//sphere->draw(phongProgram);
 }
 
 /*--------------------------------------------------------------*/
@@ -632,7 +667,7 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	}
 
 	//2. check with sphere
-	Vec3D s_size = sphere->getSize();
+	/*Vec3D s_size = sphere->getSize();
 	Vec3D s_pos = sphere->getPos();
 
 	Vec3D s_dist = in_pos - s_pos;
@@ -649,7 +684,7 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 		//move outside of sphere along radial vector
 		out_pos = s_pos + (sqrt(r_sq) + 0.001)*s_dist;
 		return;
-	}
+	}*/
 
 	//no collisions
 	out_vel = in_vel;
