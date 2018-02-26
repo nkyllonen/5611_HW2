@@ -28,6 +28,7 @@ World::~World()
 	delete[] modelData;
 	delete[] lineData;
 	delete[] texturedData;
+	delete[] texturedCoords;
 	delete[] texturedIndices;
 
 	for (int i = 0; i < num_nodes; i++)
@@ -95,6 +96,7 @@ bool World::loadModelData()
 	}
 
 	modelData = new float[total_model_verts * 8];
+	cout << "Allocated modelData : " << total_model_verts * 8 << endl;
 	copy(cubeData, cubeData + CUBE_VERTS * 8, modelData);
 	copy(sphereData, sphereData + SPHERE_VERTS * 8, modelData + (CUBE_VERTS * 8));
 	delete[] cubeData;
@@ -104,14 +106,18 @@ bool World::loadModelData()
 	//BUILD LINE + TEXTURED ARRAYS
 	/////////////////////////////////
 	lineData = new float[total_springs * 6]; //3 coords per endpts of each spring (3 x 2)
+	cout << "Allocated lineData : " << total_springs * 6 << endl;
 	texturedData = new float[num_nodes * 6]; //each "node" has a pos + norm (3 + 3 floats)
+	cout << "Allocated texturedData : " << num_nodes * 6 << endl;
 
 	//load textures coords now since they're static
-	texturedCoords = new float[total_triangles * 3 * 2]; //each triangle has 3 verts, each with 2 coords
+	texturedCoords = new float[num_nodes * 2]; //2 coords per vertex
+	cout << "Allocated texturedCoords : " << total_triangles * 3 * 2 << endl;
 	loadTextureCoords();
 
 	//load indices now since they're static
 	texturedIndices = new ushort[total_triangles * 3];
+	cout << "Allocated texturedIndices : " << total_triangles * 3 << endl;
 	loadTexturedIndices();
 
 	return true;
@@ -190,6 +196,42 @@ bool World::setupGraphics()
 	GLint line_posAttrib = glGetAttribLocation(flatProgram, "position");
 	glVertexAttribPointer(line_posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 	glEnableVertexAttribArray(line_posAttrib);
+
+	/////////////////////////////////
+	//BUILD TEXTURED VAO + VBO
+	/////////////////////////////////
+	glGenVertexArrays(1, &textured_vao);
+	glBindVertexArray(textured_vao);
+	glGenBuffers(2, textured_vbos); //get 2 ids for the 2 VBOs
+
+	//1. POSITIONS + NORMALS --> textured_vbos[0]
+	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[0]);
+	glBufferData(GL_ARRAY_BUFFER, num_nodes * 6 * sizeof(float), texturedData, GL_STREAM_DRAW); //dynamic
+
+	//2. TEX COORDS --> textured_vbos[1]
+	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[1]);
+	glBufferData(GL_ARRAY_BUFFER, num_nodes * 2 * sizeof(float), texturedCoords, GL_STATIC_DRAW);
+
+	//3. INDICES --> textured_ibo
+	glGenBuffers(1, textured_ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textured_ibo[0]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_triangles * 3 * sizeof(ushort), texturedIndices, GL_STATIC_DRAW);
+
+
+	/////////////////////////////////
+	//SETUP SHADER UNIFORMS FOR TEXTURED
+	/////////////////////////////////
+	GLint tex_posAttrib = glGetAttribLocation(phongProgram, "position");
+	glVertexAttribPointer(tex_posAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0); //positions first
+	glEnableVertexAttribArray(tex_posAttrib);
+
+	GLint tex_normAttrib = glGetAttribLocation(phongProgram, "inNormal");
+	glVertexAttribPointer(tex_normAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))); //normals second
+	glEnableVertexAttribArray(tex_normAttrib);
+
+	GLint tex_texAttrib = glGetAttribLocation(phongProgram, "inTexcoord");
+	glVertexAttribPointer(tex_texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+	glEnableVertexAttribArray(tex_texAttrib);
 
 	glBindVertexArray(0);
 
@@ -431,6 +473,112 @@ void World::drawSprings()
 }//END drawSprings
 
 /*--------------------------------------------------------------*/
+// drawSkeleton : draws Nodes and springs
+/*--------------------------------------------------------------*/
+void World::drawSkeleton(Camera* cam)
+{
+	glUseProgram(phongProgram); //Set the active shader (only one can be used at a time)
+
+	//vertex shader uniforms
+	GLint uniView = glGetUniformLocation(phongProgram, "view");
+	GLint uniProj = glGetUniformLocation(phongProgram, "proj");
+	GLint uniTexID = glGetUniformLocation(phongProgram, "texID");
+
+	//build view matrix from Camera
+	glm::mat4 view = glm::lookAt(
+		util::vec3DtoGLM(cam->getPos()),
+		util::vec3DtoGLM(cam->getPos() + cam->getDir()),  //Look at point
+		util::vec3DtoGLM(cam->getUp()));
+
+	glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
+
+	glm::mat4 proj = glm::perspective(3.14f / 4, 800.0f / 600.0f, 0.1f, 100.0f); //FOV, aspect, near, far
+	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex0);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex0"), 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, tex1);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
+
+	glBindVertexArray(model_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, model_vbo[0]); //Set the model_vbo as the active VBO
+
+	glUniform1i(uniTexID, -1); //Set texture ID to use for nodes and springs (-1 = no texture)
+	drawNodes();
+
+	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
+	floor->draw(phongProgram);
+
+	glUniform1i(uniTexID, -1);
+	sphere->draw(phongProgram);
+
+	glUseProgram(flatProgram);
+	glBindVertexArray(line_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
+
+	//new uniforms for the flat shading program
+	GLint uniLineModel = glGetUniformLocation(flatProgram, "model");
+	GLint uniLineView = glGetUniformLocation(flatProgram, "view");
+	GLint uniLineProj = glGetUniformLocation(flatProgram, "proj");
+	glm::mat4 model;
+	glUniformMatrix4fv(uniLineModel, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(uniLineView, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(uniLineProj, 1, GL_FALSE, glm::value_ptr(proj));
+
+	drawSprings();
+}
+
+/*--------------------------------------------------------------*/
+// drawTextured : draws textured cloth
+/*--------------------------------------------------------------*/
+void World::drawTextured(Camera* cam)
+{
+	glUseProgram(phongProgram); //Set the active shader (only one can be used at a time)
+
+	//vertex shader uniforms
+	GLint uniView = glGetUniformLocation(phongProgram, "view");
+	GLint uniProj = glGetUniformLocation(phongProgram, "proj");
+	GLint uniTexID = glGetUniformLocation(phongProgram, "texID");
+
+	//build view matrix from Camera
+	glm::mat4 view = glm::lookAt(
+		util::vec3DtoGLM(cam->getPos()),
+		util::vec3DtoGLM(cam->getPos() + cam->getDir()),  //Look at point
+		util::vec3DtoGLM(cam->getUp()));
+
+	glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
+
+	glm::mat4 proj = glm::perspective(3.14f / 4, 800.0f / 600.0f, 0.1f, 100.0f); //FOV, aspect, near, far
+	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex0);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex0"), 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, tex1);
+	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
+
+	glBindVertexArray(textured_vao);
+
+	//load new positions and normals
+	loadTexturedPosAndNorm();
+	glBufferData(GL_ARRAY_BUFFER, num_nodes * 6 * sizeof(float), texturedData, GL_STREAM_DRAW); //dynamic
+
+	glUniform1i(uniTexID, 0);
+	glDrawElements(GL_TRIANGLES, total_triangles * 3, GL_UNSIGNED_SHORT, 0);
+
+	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
+	floor->draw(phongProgram);
+
+	glUniform1i(uniTexID, -1);
+	sphere->draw(phongProgram);
+}
+
+/*--------------------------------------------------------------*/
 // loadLineVertices : loop through nodes array and plug positions into lineData
 /*--------------------------------------------------------------*/
 void World::loadLineVertices()
@@ -517,21 +665,30 @@ void World::loadTexturedPosAndNorm()
 	int cur_index = 0;
 	Vec3D vec1, vec2, pos_i, temp_norm;
 
-	for (int i=0; i < num_nodes; i++)
+	for (int i = 0; i < num_nodes; i++)
 	{
 		pos_i = node_arr[i]->getPos();
 
 		//1. load position
+		//printf("\tloading position @ cur_index: %i into texturedData\n", cur_index);
 		util::loadVecValues(texturedData, pos_i, cur_index);
 
 		//2. calc and load normal
-		if (i >= width * (height - 1)) //bottom
+		if ((i >= width * (height - 1)) && ((i+1)%width == 0)) //bottom right corner
 		{
+			//cout << "**BOTTOM RIGHT**" << endl;
+			vec1 = node_arr[i-width]->getPos() - pos_i;
+			vec2 = node_arr[i-1]->getPos() - pos_i;
+		}
+		else if (i >= width * (height - 1)) //bottom
+		{
+			//cout << "**BOTTOM ROW**" << endl;
 			vec1 = node_arr[i-width]->getPos() - pos_i;
 			vec2 = node_arr[i+1]->getPos() - pos_i;
 		}
 		else if ((i+1)%width == 0) //right side
 		{
+			//cout << "**RIGHT SIDE**" << endl;
 			vec2 = node_arr[i-1]->getPos() - pos_i;
 			vec1 = node_arr[i+width]->getPos() - pos_i;
 		}
@@ -544,8 +701,11 @@ void World::loadTexturedPosAndNorm()
 		temp_norm = cross(vec1, vec2);
 		temp_norm.normalize();
 
+		//printf("\tloading normal @ cur_index: %i into texturedData\n", cur_index);
 		util::loadVecValues(texturedData, temp_norm, cur_index);
 	}//END for
+
+	//cout << "**" << cur_index << " positions and normals loaded for texturing**" << endl;
 }//END loadTexturedPosAndNorm
 
 /*--------------------------------------------------------------*/
@@ -567,11 +727,12 @@ void World::loadTextureCoords()
 			u = util::interp(0, 1, (float)col/(width - 1));
 
 			//3. store in texturedCoords (u,v)
-			texturedCoords[cur_index] = u;
-			texturedCoords[cur_index+1] = v;
-			cur_index += 2;
+			texturedCoords[cur_index++] = u;
+			texturedCoords[cur_index++] = v;
 		}//END col - for
 	}//END row - for
+
+	cout << "**" << cur_index << " texture coordinates loaded for texturing**" << endl;
 }//END loadTextureCoords
 
 /*--------------------------------------------------------------*/
@@ -586,81 +747,16 @@ void World::loadTexturedIndices()
 		if ((i+1) % width != 0) //not the right side
 		{
 			//lower triangle
-			texturedIndices[cur_index] = i;
-			texturedIndices[++cur_index] = i + width;
-			texturedIndices[++cur_index] = i + width + 1;
+			texturedIndices[cur_index++] = i;
+			texturedIndices[cur_index++] = i + width;
+			texturedIndices[cur_index++] = i + width + 1;
 
 			//upper triangle
-			texturedIndices[++cur_index] = i;
-			texturedIndices[++cur_index] = i + width + 1;
-			texturedIndices[++cur_index] = i + 1;
+			texturedIndices[cur_index++] = i;
+			texturedIndices[cur_index++] = i + width + 1;
+			texturedIndices[cur_index++] = i + 1;
 		}
 	}
+
+	cout << "**" << cur_index << " indices loaded for texturing**" << endl;
 }//END loadTexturedIndices
-
-/*--------------------------------------------------------------*/
-// drawSkeleton : draws Nodes and springs
-/*--------------------------------------------------------------*/
-void World::drawSkeleton(Camera* cam)
-{
-	glUseProgram(phongProgram); //Set the active shader (only one can be used at a time)
-
-	//vertex shader uniforms
-	GLint uniView = glGetUniformLocation(phongProgram, "view");
-	GLint uniProj = glGetUniformLocation(phongProgram, "proj");
-	GLint uniTexID = glGetUniformLocation(phongProgram, "texID");
-
-	//build view matrix from Camera
-	glm::mat4 view = glm::lookAt(
-		util::vec3DtoGLM(cam->getPos()),
-		util::vec3DtoGLM(cam->getPos() + cam->getDir()),  //Look at point
-		util::vec3DtoGLM(cam->getUp()));
-
-	glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
-
-	glm::mat4 proj = glm::perspective(3.14f / 4, 800.0f / 600.0f, 0.1f, 100.0f); //FOV, aspect, near, far
-	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex0);
-	glUniform1i(glGetUniformLocation(phongProgram, "tex0"), 0);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, tex1);
-	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
-
-	glBindVertexArray(model_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, model_vbo[0]); //Set the model_vbo as the active VBO
-
-	glUniform1i(uniTexID, -1); //Set texture ID to use for nodes and springs (-1 = no texture)
-	drawNodes();
-
-	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
-	floor->draw(phongProgram);
-
-	glUniform1i(uniTexID, -1);
-	sphere->draw(phongProgram);
-
-	glUseProgram(flatProgram);
-	glBindVertexArray(line_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); //Set the line_vbo as the active
-
-	//new uniforms for the flat shading program
-	GLint uniLineModel = glGetUniformLocation(flatProgram, "model");
-	GLint uniLineView = glGetUniformLocation(flatProgram, "view");
-	GLint uniLineProj = glGetUniformLocation(flatProgram, "proj");
-	glm::mat4 model;
-	glUniformMatrix4fv(uniLineModel, 1, GL_FALSE, glm::value_ptr(model));
-	glUniformMatrix4fv(uniLineView, 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(uniLineProj, 1, GL_FALSE, glm::value_ptr(proj));
-
-	drawSprings();
-}
-
-/*--------------------------------------------------------------*/
-// drawTextured : draws textured cloth
-/*--------------------------------------------------------------*/
-void World::drawTextured(Camera* cam)
-{
-
-}

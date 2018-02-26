@@ -77,7 +77,8 @@ private:
 	GLuint line_vao;
 	GLuint line_vbo[1];
 	GLuint textured_vao;
-	GLuint textured_vbos[3];
+	GLuint textured_vbos[2];
+	GLuint textured_ibo[1];
 
 	//Shader and Texture GLuints
 	GLuint phongProgram;
@@ -100,13 +101,13 @@ private:
 	//PRIVATE FUNCTIONS
 	void drawNodes();
 	void drawSprings();
+	void drawSkeleton(Camera* cam);
+	void drawTextured(Camera* cam);
 	void loadLineVertices();
 	void checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel);
 	void loadTexturedPosAndNorm();
 	void loadTextureCoords();
 	void loadTexturedIndices();
-	void drawSkeleton(Camera* cam);
-	void drawTextured(Camera* cam);
 
 public:
 	int cloth_state = SKELETON;
