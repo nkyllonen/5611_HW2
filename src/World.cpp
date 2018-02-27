@@ -273,6 +273,7 @@ void World::update(double dt)
 		Vec3D e = Vec3D(1,1,1);
 
 		//2.1 calculate horizontal forces
+		#pragma omp parallel for schedule(dynamic)
 		for (int i = 0; i < width*height-1; i++)
 		{
 			if ((i+1) % width != 0) //don't apply to right column
@@ -294,6 +295,7 @@ void World::update(double dt)
 		}//FOR - horizontal
 
 		//2.2 calculate vertical forces
+		#pragma omp parallel for schedule(dynamic)
 		for (int i = 0; i < width*(height-1); i++) //don't apply to bottom row
 		{
 			//position vector from i to i+width
@@ -356,6 +358,7 @@ void World::init()
 	node_arr = new Node*[num_nodes];
 	printf("\nAllocated array of %i Nodes.\n", num_nodes);
 
+	#pragma omp parallel for schedule(dynamic)
 	for (int i = 0; i < width; i++)
 	{
 		for (int j = 0; j < height; j++)
@@ -682,7 +685,6 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 
 	if (dist_sq < r_sq)
 	{
-		//cout << "Sphere collision!" << endl;
 		s_dist.normalize();//radial vector normalized
 		out_vel = util::calcCollisionVel(in_vel, s_dist, COR);
 
