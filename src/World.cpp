@@ -659,8 +659,12 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	float COR = 0.2;
 
 	Vec3D f_dist = in_pos - f_pos;
+	float distalong_n = dotProduct(f_dist, floor_normal);
+	float sizealong_n = dotProduct(f_size, floor_normal);
 
-	if (f_dist.getY() < f_size.getY() + 0.1 && fabs(f_dist.getX()) < f_size.getX()/2 && fabs(f_dist.getZ()) < f_size.getZ()/2)
+	if (distalong_n < sizealong_n + 0.1
+				&& fabs(f_dist.getX()) < f_size.getX()/2
+	 			&& fabs(f_dist.getZ()) < f_size.getZ()/2)
 	{
 		out_vel = util::calcCollisionVel(in_vel, floor_normal, COR);
 		out_pos = in_pos + (dt+0.01)*out_vel;
@@ -786,7 +790,6 @@ void World::loadTexturedIndices()
 			texturedIndices[cur_index++] = i + width + 1;
 			texturedIndices[cur_index++] = i + 1;
 		}
-		cout << endl;
 	}
 
 	cout << "**" << cur_index << " indices loaded for texturing**" << endl;
