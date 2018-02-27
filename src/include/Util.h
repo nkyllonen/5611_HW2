@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 #include "Vec3D.h"
 #include "Camera.h"
@@ -48,11 +49,17 @@ namespace util
 	//http://www.nexcius.net/2012/11/20/how-to-load-a-glsl-shader-in-opengl-using-c/
 	GLuint LoadShader(const char *vertex_path, const char *fragment_path);
 
+	//loads bpm file as a texture
 	GLuint LoadTexture(const char* texFile);
 
+	//loads Vec3D.xyz values into arr
 	void loadVecValues(float* arr, Vec3D v, int& start);
 
+	//reflection calculation
 	Vec3D calcCollisionVel(Vec3D in_vel, Vec3D norm, float COR);
+
+	//calculates linear interpolation of amount t
+	float interp(float start, float end, float t);
 }
 
 #endif

@@ -197,8 +197,8 @@ GLuint util::LoadTexture(const char * texFile)
 	//What to do outside 0-1 range
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
 	//Load the texture into memory
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_BGR, GL_UNSIGNED_BYTE, surface->pixels);
@@ -215,10 +215,9 @@ GLuint util::LoadTexture(const char * texFile)
 /*--------------------------------------------------------------*/
 void util::loadVecValues(float* arr, Vec3D v, int& start)
 {
-	arr[start] = v.x;
-	arr[start+1] = v.y;
-	arr[start+2] = v.z;
-	start += 3;
+	arr[start++] = v.x;
+	arr[start++] = v.y;
+	arr[start++] = v.z;
 }
 
 /*--------------------------------------------------------------*/
@@ -228,4 +227,16 @@ Vec3D util::calcCollisionVel(Vec3D in_vel, Vec3D norm, float COR)
 {
 	Vec3D b = (dotProduct(in_vel, norm))*norm;
 	return in_vel - (1 + COR)*b;
+}
+
+/*--------------------------------------------------------------*/
+// interp :
+/*--------------------------------------------------------------*/
+float util::interp(float start, float end, float t)
+{
+	t = fabs(t); //check for negative
+
+	if (t > 1) t = 1; //clamp to [0,1]
+
+	return start + t*(end - start);
 }

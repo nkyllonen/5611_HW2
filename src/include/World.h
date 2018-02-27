@@ -57,27 +57,36 @@ private:
 
 	WorldObject* sphere;
 
-	//model information
+	//VBO data
 	float* modelData;
 	float* lineData;
+	float* texturedData;
+	float* texturedCoords;
+	unsigned int* texturedIndices;
 	int CUBE_START = 0;
 	int CUBE_VERTS = 0;
 	int SPHERE_START = 0;
 	int SPHERE_VERTS = 0;
 	int total_model_verts = 0;
 	int total_springs = 0;
+	int total_triangles = 0;
 
 	//VAO and VBO GLuints
 	GLuint model_vao;
 	GLuint model_vbo[1];
 	GLuint line_vao;
 	GLuint line_vbo[1];
+	GLuint textured_vao;
+	GLuint textured_vbos[2];
+	GLuint textured_ibo[1];
 
 	//Shader and Texture GLuints
 	GLuint phongProgram;
 	GLuint flatProgram;
 	GLuint tex0;
 	GLuint tex1;
+
+	Material cloth_mat = Material();
 
 	//updating constant(s)
 	const int NUM_SUBSTEPS = 10;
@@ -94,8 +103,13 @@ private:
 	//PRIVATE FUNCTIONS
 	void drawNodes();
 	void drawSprings();
+	void drawSkeleton(Camera* cam);
+	void drawTextured(Camera* cam);
 	void loadLineVertices();
 	void checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel);
+	void loadTexturedPosAndNorm();
+	void loadTextureCoords();
+	void loadTexturedIndices();
 
 public:
 	int cloth_state = SKELETON;
