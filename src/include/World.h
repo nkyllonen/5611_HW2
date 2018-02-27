@@ -96,7 +96,6 @@ private:
 	void drawSprings();
 	void loadLineVertices();
 	void checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out_pos, Vec3D& out_vel);
-	void loadClothTexCoords();
 
 public:
 	int cloth_state = SKELETON;
