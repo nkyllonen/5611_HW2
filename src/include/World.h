@@ -62,7 +62,7 @@ private:
 	float* lineData;
 	float* texturedData;
 	float* texturedCoords;
-	ushort* texturedIndices;
+	unsigned int* texturedIndices;
 	int CUBE_START = 0;
 	int CUBE_VERTS = 0;
 	int SPHERE_START = 0;

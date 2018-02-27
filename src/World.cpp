@@ -116,7 +116,7 @@ bool World::loadModelData()
 	loadTextureCoords();
 
 	//load indices now since they're static
-	texturedIndices = new ushort[total_triangles * 3];
+	texturedIndices = new unsigned int[total_triangles * 3];
 	cout << "Allocated texturedIndices : " << total_triangles * 3 << endl;
 	loadTexturedIndices();
 
@@ -208,19 +208,6 @@ bool World::setupGraphics()
 	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[0]);
 	glBufferData(GL_ARRAY_BUFFER, num_nodes * 6 * sizeof(float), texturedData, GL_STREAM_DRAW); //dynamic
 
-	//2. TEX COORDS --> textured_vbos[1]
-	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[1]);
-	glBufferData(GL_ARRAY_BUFFER, num_nodes * 2 * sizeof(float), texturedCoords, GL_STATIC_DRAW);
-
-	//3. INDICES --> textured_ibo
-	glGenBuffers(1, textured_ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textured_ibo[0]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_triangles * 3 * sizeof(ushort), texturedIndices, GL_STATIC_DRAW);
-
-
-	/////////////////////////////////
-	//SETUP SHADER UNIFORMS FOR TEXTURED
-	/////////////////////////////////
 	GLint tex_posAttrib = glGetAttribLocation(phongProgram, "position");
 	glVertexAttribPointer(tex_posAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0); //positions first
 	glEnableVertexAttribArray(tex_posAttrib);
@@ -229,9 +216,23 @@ bool World::setupGraphics()
 	glVertexAttribPointer(tex_normAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))); //normals second
 	glEnableVertexAttribArray(tex_normAttrib);
 
+	//2. TEX COORDS --> textured_vbos[1]
+	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[1]);
+	glBufferData(GL_ARRAY_BUFFER, num_nodes * 2 * sizeof(float), texturedCoords, GL_STATIC_DRAW);
+
 	GLint tex_texAttrib = glGetAttribLocation(phongProgram, "inTexcoord");
 	glVertexAttribPointer(tex_texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 	glEnableVertexAttribArray(tex_texAttrib);
+
+	//3. INDICES --> textured_ibo
+	glGenBuffers(1, textured_ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textured_ibo[0]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_triangles * 3 * sizeof(unsigned int), texturedIndices, GL_STATIC_DRAW);
+
+
+	/////////////////////////////////
+	//SETUP SHADER UNIFORMS FOR TEXTURED
+	/////////////////////////////////
 
 	glBindVertexArray(0);
 
@@ -600,7 +601,7 @@ void World::drawTextured(Camera* cam)
 
 	glUniform1f(uniform_s, cloth_mat.getNS());
 
-	glDrawElements(GL_TRIANGLES, total_triangles * 3, GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_TRIANGLES, total_triangles * 3, GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, 0, total_triangles);
 
 	//switch to model_vao to render floor and sphere
@@ -610,8 +611,8 @@ void World::drawTextured(Camera* cam)
 	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
 	floor->draw(phongProgram);
 
-	//glUniform1i(uniTexID, -1);
-	//sphere->draw(phongProgram);
+	glUniform1i(uniTexID, -1);
+	sphere->draw(phongProgram);
 }
 
 /*--------------------------------------------------------------*/
@@ -668,7 +669,7 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	}
 
 	//2. check with sphere
-	/*Vec3D s_size = sphere->getSize();
+	Vec3D s_size = sphere->getSize();
 	Vec3D s_pos = sphere->getPos();
 
 	Vec3D s_dist = in_pos - s_pos;
@@ -685,7 +686,7 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 		//move outside of sphere along radial vector
 		out_pos = s_pos + (sqrt(r_sq) + 0.001)*s_dist;
 		return;
-	}*/
+	}
 
 	//no collisions
 	out_vel = in_vel;
@@ -706,10 +707,7 @@ void World::loadTexturedPosAndNorm()
 		pos_i = node_arr[i]->getPos();
 
 		//1. load position
-		//printf("\tloading position @ cur_index: %i into texturedData\n", cur_index);
 		util::loadVecValues(texturedData, pos_i, cur_index);
-		//printf("-->added pos %i: ", i);
-		//pos_i.print();
 
 		//2. calc and load normal
 		if ((i >= width * (height - 1)) && ((i+1)%width == 0)) //bottom right corner
@@ -736,11 +734,8 @@ void World::loadTexturedPosAndNorm()
 		temp_norm = cross(vec1, vec2);
 		temp_norm.normalize();
 
-		//printf("\tloading normal @ cur_index: %i into texturedData\n", cur_index);
 		util::loadVecValues(texturedData, temp_norm, cur_index);
 	}//END for
-	//cout << endl;
-	//cout << "**" << cur_index << " positions and normals loaded for texturing**" << endl;
 }//END loadTexturedPosAndNorm
 
 /*--------------------------------------------------------------*/
