@@ -113,7 +113,8 @@ private:
 
 public:
 	int cloth_state = SKELETON;
-	int pin_state = PIN_CORNERS;
+	int pin_state = PIN_TOP;
+	Vec3D windV = Vec3D();
 
 	//CONSTRUCTORS AND DESTRUCTORS
 	World();

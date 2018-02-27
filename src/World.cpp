@@ -312,6 +312,7 @@ void World::update(double dt)
 		}//FOR - vertical
 
 		//2.3 add gravity to each velocity
+		Vec3D vel_i;
 		for (int i = 0; i < num_nodes; i++)
 		{
 			if (node_arr[i]->getIsFixed())
@@ -320,7 +321,8 @@ void World::update(double dt)
 			}
 			else
 			{
-				node_arr[i]->setVel(node_arr[i]->getVel() + gravity);
+				vel_i = node_arr[i]->getVel();
+				node_arr[i]->setVel(vel_i + gravity + windV);
 			}
 		}
 

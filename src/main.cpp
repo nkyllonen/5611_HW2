@@ -349,6 +349,26 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 		cout << "--Pin state changed--" << endl;
 		(myWorld->pin_state == PIN_TOP) ? myWorld->pin_state = PIN_CORNERS : myWorld->pin_state = PIN_TOP;
 		break;
+	/////////////////////////////////
+	//TURN WIND ON/OFF WITH 3
+	/////////////////////////////////
+	case SDLK_3:
+	case SDLK_KP_3:
+	{
+		Vec3D w = myWorld->windV;
+		if (w.z != 0)
+		{
+			cout << "--Turning wind off" << endl;
+			w.z = 0;
+		}
+		else
+		{
+			cout << "--Turning wind on" << endl;
+			w.z = 0.001;
+		}
+		myWorld->windV = w;
+		break;
+	}
 	default:
 		printf("ERROR: Invalid key pressed (%s)\n", SDL_GetKeyName(event.keysym.sym));
 		break;
