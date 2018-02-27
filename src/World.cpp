@@ -689,8 +689,6 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	out_vel = in_vel;
 	out_pos = in_pos;
 }
-<<<<<<< HEAD
-=======
 
 /*--------------------------------------------------------------*/
 // loadTexturedPosAndNorm : calculates & stores vertex position
@@ -791,4 +789,3 @@ void World::loadTexturedIndices()
 
 	cout << "**" << cur_index << " indices loaded for texturing**" << endl;
 }//END loadTexturedIndices
->>>>>>> texturing
