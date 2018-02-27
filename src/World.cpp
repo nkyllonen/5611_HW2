@@ -141,7 +141,7 @@ bool World::setupGraphics()
 	glBufferData(GL_ARRAY_BUFFER, total_model_verts * 8 * sizeof(float), modelData, GL_STATIC_DRAW); //upload vertices to model_vbo
 
 	/////////////////////////////////
-	//SETUP CUBE SHADERS (model_vao attributes)
+	//SETUP CUBE SHADERS (model_vao attributes --> bound to model_vbo[0])
 	/////////////////////////////////
 	phongProgram = util::LoadShader("Shaders/phongTex.vert", "Shaders/phongTex.frag");
 
@@ -415,8 +415,8 @@ void World::init()
 	sphere->setSize(Vec3D(3,3,3));
 
 	//initialize cloth material
-	cloth_mat.setAmbient(glm::vec3(1,1,1));
-	cloth_mat.setDiffuse(glm::vec3(1,1,1));
+	cloth_mat.setAmbient(glm::vec3(0.5,0.5,0.5));
+	cloth_mat.setDiffuse(glm::vec3(0.5,0.5,0.5));
 	cloth_mat.setSpecular(glm::vec3(0, 0, 0));
 }//END init
 
@@ -515,8 +515,8 @@ void World::drawSkeleton(Camera* cam)
 	glUniform1i(uniTexID, 1); //Set texture ID to use for floor (1 = stone)
 	floor->draw(phongProgram);
 
-	//glUniform1i(uniTexID, -1);
-	//sphere->draw(phongProgram);
+	glUniform1i(uniTexID, -1);
+	sphere->draw(phongProgram);
 
 	glUseProgram(flatProgram);
 	glBindVertexArray(line_vao);
@@ -654,7 +654,7 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 	//1. check with floor
 	Vec3D f_size = floor->getSize();
 	Vec3D f_pos = floor->getPos();
-	float COR = 0.5;
+	float COR = 0.2;
 
 	Vec3D f_dist = in_pos - f_pos;
 
@@ -681,7 +681,7 @@ void World::checkForCollisions(Vec3D in_pos, Vec3D in_vel, double dt, Vec3D& out
 		out_vel = util::calcCollisionVel(in_vel, s_dist, COR);
 
 		//move outside of sphere along radial vector
-		out_pos = s_pos + (sqrt(r_sq) + 0.001)*s_dist;
+		out_pos = s_pos + (sqrt(r_sq) + 0.0001)*s_dist;
 		return;
 	}
 
@@ -757,7 +757,6 @@ void World::loadTextureCoords()
 			texturedCoords[cur_index++] = u;
 			texturedCoords[cur_index++] = v;
 
-			//printf("-->loaded tex coord: (%f, %f) for row %i, col %i\n", u, v, row, col);
 		}//END col - for
 	}//END row - for
 
@@ -779,13 +778,11 @@ void World::loadTexturedIndices()
 			texturedIndices[cur_index++] = i;
 			texturedIndices[cur_index++] = i + width;
 			texturedIndices[cur_index++] = i + width + 1;
-			//printf("upper tri: (%i, %i, %i)\n", i, i+width, i+width+1);
 
 			//upper triangle
 			texturedIndices[cur_index++] = i;
 			texturedIndices[cur_index++] = i + width + 1;
 			texturedIndices[cur_index++] = i + 1;
-			//printf("lower tri: (%i, %i, %i)\n", i, i+width+1, i+1);
 		}
 		cout << endl;
 	}
