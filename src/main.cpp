@@ -283,6 +283,7 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 		}
 		break;
 	case SDLK_LEFT:
+	cout << "LEFT" << endl;
 		if (cur_state == MOVE_CLOTH)
 		{
 			//add left velocity to top row
@@ -294,6 +295,7 @@ void onKeyDown(SDL_KeyboardEvent & event, Camera* cam, World* myWorld)
 		}
 		break;
 	case SDLK_RIGHT:
+	cout << "RIGHT" << endl;
 		if (cur_state == MOVE_CLOTH)
 		{
 			//add right velocity to top row

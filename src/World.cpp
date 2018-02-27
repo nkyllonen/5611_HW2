@@ -568,7 +568,7 @@ void World::drawTextured(Camera* cam)
 	glUniform1i(glGetUniformLocation(phongProgram, "tex1"), 1);
 
 	glBindVertexArray(textured_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[0]); //bind pos + norm VBO
 
 	//load new positions and normals
 	loadTexturedPosAndNorm();
@@ -601,6 +601,7 @@ void World::drawTextured(Camera* cam)
 	glUniform1f(uniform_s, cloth_mat.getNS());
 
 	glDrawElements(GL_TRIANGLES, total_triangles * 3, GL_UNSIGNED_SHORT, 0);
+	//glDrawArrays(GL_TRIANGLES, 0, total_triangles);
 
 	//switch to model_vao to render floor and sphere
 	glBindVertexArray(model_vao);
@@ -707,25 +708,24 @@ void World::loadTexturedPosAndNorm()
 		//1. load position
 		//printf("\tloading position @ cur_index: %i into texturedData\n", cur_index);
 		util::loadVecValues(texturedData, pos_i, cur_index);
+		//printf("-->added pos %i: ", i);
+		//pos_i.print();
 
 		//2. calc and load normal
 		if ((i >= width * (height - 1)) && ((i+1)%width == 0)) //bottom right corner
 		{
-			//cout << "**BOTTOM RIGHT**" << endl;
 			vec1 = node_arr[i-width]->getPos() - pos_i;
 			vec2 = node_arr[i-1]->getPos() - pos_i;
 		}
 		else if (i >= width * (height - 1)) //bottom
 		{
-			//cout << "**BOTTOM ROW**" << endl;
-			vec1 = node_arr[i-width]->getPos() - pos_i;
-			vec2 = node_arr[i+1]->getPos() - pos_i;
+			vec2 = node_arr[i-width]->getPos() - pos_i;
+			vec1 = node_arr[i+1]->getPos() - pos_i;
 		}
 		else if ((i+1)%width == 0) //right side
 		{
-			//cout << "**RIGHT SIDE**" << endl;
-			vec2 = node_arr[i-1]->getPos() - pos_i;
-			vec1 = node_arr[i+width]->getPos() - pos_i;
+			vec1 = node_arr[i-1]->getPos() - pos_i;
+			vec2 = node_arr[i+width]->getPos() - pos_i;
 		}
 		else //all not special cases
 		{
@@ -739,7 +739,7 @@ void World::loadTexturedPosAndNorm()
 		//printf("\tloading normal @ cur_index: %i into texturedData\n", cur_index);
 		util::loadVecValues(texturedData, temp_norm, cur_index);
 	}//END for
-
+	//cout << endl;
 	//cout << "**" << cur_index << " positions and normals loaded for texturing**" << endl;
 }//END loadTexturedPosAndNorm
 
@@ -764,6 +764,8 @@ void World::loadTextureCoords()
 			//3. store in texturedCoords (u,v)
 			texturedCoords[cur_index++] = u;
 			texturedCoords[cur_index++] = v;
+
+			//printf("-->loaded tex coord: (%f, %f) for row %i, col %i\n", u, v, row, col);
 		}//END col - for
 	}//END row - for
 
@@ -785,12 +787,15 @@ void World::loadTexturedIndices()
 			texturedIndices[cur_index++] = i;
 			texturedIndices[cur_index++] = i + width;
 			texturedIndices[cur_index++] = i + width + 1;
+			//printf("upper tri: (%i, %i, %i)\n", i, i+width, i+width+1);
 
 			//upper triangle
 			texturedIndices[cur_index++] = i;
 			texturedIndices[cur_index++] = i + width + 1;
 			texturedIndices[cur_index++] = i + 1;
+			//printf("lower tri: (%i, %i, %i)\n", i, i+width+1, i+1);
 		}
+		cout << endl;
 	}
 
 	cout << "**" << cur_index << " indices loaded for texturing**" << endl;
