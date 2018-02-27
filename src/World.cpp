@@ -204,10 +204,11 @@ bool World::setupGraphics()
 	glBindVertexArray(textured_vao);
 	glGenBuffers(2, textured_vbos); //get 2 ids for the 2 VBOs
 
-	//1. POSITIONS + NORMALS --> textured_vbos[0]
+	//1.1 POSITIONS + NORMALS --> textured_vbos[0]
 	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[0]);
 	glBufferData(GL_ARRAY_BUFFER, num_nodes * 6 * sizeof(float), texturedData, GL_STREAM_DRAW); //dynamic
 
+	//1.2 setup position and normal attributes --> need to set now while textured_vbos[0] is bound
 	GLint tex_posAttrib = glGetAttribLocation(phongProgram, "position");
 	glVertexAttribPointer(tex_posAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0); //positions first
 	glEnableVertexAttribArray(tex_posAttrib);
@@ -216,10 +217,11 @@ bool World::setupGraphics()
 	glVertexAttribPointer(tex_normAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))); //normals second
 	glEnableVertexAttribArray(tex_normAttrib);
 
-	//2. TEX COORDS --> textured_vbos[1]
+	//2.1 TEX COORDS --> textured_vbos[1]
 	glBindBuffer(GL_ARRAY_BUFFER, textured_vbos[1]);
 	glBufferData(GL_ARRAY_BUFFER, num_nodes * 2 * sizeof(float), texturedCoords, GL_STATIC_DRAW);
 
+	//2.2 setup texture coord attributes --> need to set now while textured_vbos[1] is bound
 	GLint tex_texAttrib = glGetAttribLocation(phongProgram, "inTexcoord");
 	glVertexAttribPointer(tex_texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 	glEnableVertexAttribArray(tex_texAttrib);
@@ -228,11 +230,6 @@ bool World::setupGraphics()
 	glGenBuffers(1, textured_ibo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textured_ibo[0]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_triangles * 3 * sizeof(unsigned int), texturedIndices, GL_STATIC_DRAW);
-
-
-	/////////////////////////////////
-	//SETUP SHADER UNIFORMS FOR TEXTURED
-	/////////////////////////////////
 
 	glBindVertexArray(0);
 
